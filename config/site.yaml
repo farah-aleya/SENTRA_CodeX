@@ -1,0 +1,17 @@
+# SENTRA site config for real footage.
+# Add cameras and zones with:  python scripts/draw_zones.py --camera gate01 --source samples/your_clip.mp4
+rules:
+  active_hours: always      # use [22, 6] to only alert between 10 PM and 6 AM
+  breach_seconds: 1.0       # seconds inside a restricted zone before alert
+  away_seconds: 1.0         # seconds at an Away Mode house before alert
+  loiter_seconds: 120       # 2 minutes (lower it, e.g. 20, for a short demo clip)
+  vehicle_seconds: 1800     # 30 minutes (lower it, e.g. 20, for a short demo clip)
+  grace_seconds: 3.0
+  cooldown_seconds: 60       # same rule + zone alerts at most once per this many seconds
+health:
+  offline_seconds: 5        # no video for this long = CAMERA OFFLINE
+  frozen_seconds: 5         # picture unchanged for this long = CAMERA FROZEN
+  blocked_seconds: 2        # covered / no detail for this long = CAMERA BLOCKED
+  baseline_seconds: 3       # first seconds used to learn the normal picture
+away_mode: []               # e.g. ["12"] marks House 12 as away
+cameras: {}

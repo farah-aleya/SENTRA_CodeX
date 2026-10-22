@@ -1,0 +1,44 @@
+# Showcase config used to build the public prototype page (web/).
+# Thresholds are shortened so each short clip shows its alert.
+rules:
+  active_hours: always
+  breach_seconds: 0.5
+  away_seconds: 1.0
+  loiter_seconds: 6
+  vehicle_seconds: 20
+  grace_seconds: 5.0
+  cooldown_seconds: 60
+health:
+  offline_seconds: 5
+  frozen_seconds: 5
+  blocked_seconds: 1.5
+  baseline_seconds: 3
+away_mode: ["12"]
+cameras:
+  gate:
+    name: CAM 01 Main Gate (night IR)
+    source: samples/gate_night.mp4
+    conf: 0.15          # dark IR night view: lower confidence, bigger image
+    imgsz: 960
+    zones:
+      - {id: gate_8, type: restricted, house: "8", name: Gate No. 8, polygon: [[0.58, 0.05], [0.80, 0.05], [0.80, 0.40], [0.58, 0.40]]}
+      - {id: house_8, type: house, house: "8", name: Front of No. 8, polygon: [[0.45, 0.40], [0.80, 0.40], [0.80, 0.58], [0.45, 0.58]]}
+  porch:
+    name: CAM 02 Porch, House 12
+    source: samples/porch_day.mp4
+    zones:
+      - {id: house_12, type: house, house: "12", polygon: [[0.0, 0.35], [0.62, 0.35], [0.62, 1.0], [0.0, 1.0]]}
+  door:
+    name: CAM 03 Front Door, House 15 (night)
+    source: samples/door_night.mp4
+    zones:
+      - {id: house_15, type: house, house: "15", polygon: [[0.10, 0.62], [0.78, 0.62], [0.78, 0.95], [0.10, 0.95]]}
+  street:
+    name: CAM 04 Jalan Melati
+    source: samples/street_walk.mp4
+    zones:
+      - {id: house_14, type: house, house: "14", name: Garden No. 14, polygon: [[0.0, 0.82], [1.0, 0.82], [1.0, 1.0], [0.0, 1.0]]}
+  lobby:
+    name: CAM 05 Guardhouse Lobby
+    source: samples/lobby_tamper.mp4
+    zones: []

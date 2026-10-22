@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SENTRA Guard Console</title>
+<style>
+  :root {
+    --bg: #0d1524; --panel: #152038; --panel-2: #1b2945; --line: #263656;
+    --text: #e8edf5; --muted: #8e9bb3; --red: #e0283a; --orange: #f58220;
+    --green: #3fb66b; --grey: #5d6b85; --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+  button { font: inherit; cursor: pointer; }
+
+  header { display: flex; align-items: center; gap: 18px; padding: 12px 20px;
+    background: #0a1120; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand b { font-size: 22px; letter-spacing: .06em; color: #fff; }
+  .brand b span { color: var(--red); }
+  .brand small { color: var(--muted); font-size: 13px; }
+  .clock { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .stats { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+    padding: 5px 12px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+  .stat b { color: var(--text); font-size: 14px; margin-left: 4px; }
+  .stat.pending b { color: var(--red); }
+  .iconbtn { background: var(--panel); border: 1px solid var(--line); color: var(--text);
+    border-radius: 999px; padding: 5px 12px; font-size: 12.5px; }
+
+  main { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(340px, 1fr); gap: 16px; padding: 16px 20px; }
+  @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+  h2 { margin: 0 0 10px; font-size: 12px; letter-spacing: .12em; color: var(--orange); font-weight: 700; }
+
+  .cams { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .cam { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .cam .view { position: relative; aspect-ratio: 16/9; background: #0a0f1a; display: grid; place-items: center; }
+  .cam img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cam .nosig { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted);
+    font-weight: 700; letter-spacing: .1em; background: #0a0f1acc; }
+  [hidden] { display: none !important; }
+  .cam .meta { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; gap: 8px; }
+  .cam .name { font-weight: 600; }
+  .badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; color: #fff; letter-spacing: .04em; }
+  .b-OK { background: var(--green); } .b-FROZEN, .b-NOSIGNAL, .b-MEDIUM { background: var(--orange); }
+  .b-BLOCKED, .b-OFFLINE, .b-HIGH { background: var(--red); } .b-LEARNING, .b-STARTING { background: var(--grey); }
+  .b-CONFIRMED { background: var(--red); } .b-DISMISSED { background: var(--grey); } .b-PENDING { background: var(--orange); }
+  .empty { color: var(--muted); padding: 28px; text-align: center; border: 1px dashed var(--line); border-radius: var(--radius); }
+
+  .detail { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
+  .detail video, .detail img { width: 100%; aspect-ratio: 16/9; background: #000; display: block; object-fit: contain; }
+  .detail .body { padding: 12px 14px 14px; }
+  .detail .title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; }
+  .detail .msg { margin: 6px 0 4px; }
+  .detail .sub { color: var(--muted); font-size: 12.5px; }
+  .detail .note { width: 100%; margin: 10px 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--panel-2); color: var(--text); font: inherit; }
+  .actions { display: flex; gap: 10px; }
+  .actions button { flex: 1; border: 0; border-radius: 10px; padding: 11px; font-weight: 700; font-size: 15px; }
+  .confirm { background: var(--red); color: #fff; }
+  .dismiss { background: var(--panel-2); color: var(--text); border: 1px solid var(--line) !important; }
+  .handled { padding: 10px 12px; border-radius: 10px; background: var(--panel-2); color: var(--muted); }
+  .rec { color: var(--orange); font-size: 12px; padding: 6px 14px 0; }
+
+  .queue { display: flex; flex-direction: column; gap: 8px; max-height: 46vh; overflow: auto; padding-right: 2px; }
+  .item { display: grid; grid-template-columns: 92px 1fr; gap: 10px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 8px; text-align: left; color: inherit; width: 100%; }
+  .item.sel { outline: 2px solid var(--orange); }
+  .item img { width: 92px; height: 52px; object-fit: cover; border-radius: 6px; background: #000; }
+  .item .t { font-weight: 600; display: flex; gap: 6px; align-items: center; }
+  .item .s { color: var(--muted); font-size: 12px; }
+
+  section.history { padding: 0 20px 24px; }
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: var(--radius); overflow: hidden; }
+  th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); font-size: 13px; }
+  th { color: var(--muted); font-weight: 600; background: var(--panel-2); }
+  footer { color: var(--muted); font-size: 12px; padding: 0 20px 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  footer button { background: none; border: 0; color: var(--muted); text-decoration: underline; }
+  kbd { background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: 11px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><b>SEN<span>TRA</span></b><small>Guard Console</small></div>
+  <div class="clock" id="clock"></div>
+  <div class="stats">
+    <div class="stat pending">Pending<b id="sPending">0</b></div>
+    <div class="stat">Confirmed<b id="sConfirmed">0</b></div>
+    <div class="stat">Dismissed<b id="sDismissed">0</b></div>
+    <div class="stat">False alarms<b id="sFalse">-</b></div>
+    <div class="stat">Avg response<b id="sResp">-</b></div>
+    <div class="stat">Away Mode<b id="sAway">-</b></div>
+    <button class="iconbtn" id="soundBtn" title="Beep on new alerts">Sound: off</button>
+  </div>
+</header>
+
+<main>
+  <div>
+    <h2>LIVE CAMERAS</h2>
+    <div class="cams" id="cams"><div class="empty">No cameras running yet. Start one with<br><code>python scripts/run_sentra.py --camera demo --config config/demo.yaml --realtime --loop</code></div></div>
+  </div>
+  <div>
+    <h2>SELECTED ALERT</h2>
+    <div id="detail"><div class="empty">No alerts yet. Alerts appear here with a 10-second clip.</div></div>
+    <h2>ALERT QUEUE</h2>
+    <div class="queue" id="queue"></div>
+  </div>
+</main>
+
+<section class="history">
+  <h2>HANDLED ALERTS</h2>
+  <table><thead><tr><th>Time</th><th>Camera</th><th>Alert</th><th>Decision</th><th>Response</th><th>Note</th></tr></thead>
+    <tbody id="history"><tr><td colspan="6" style="color:var(--muted)">None yet</td></tr></tbody></table>
+</section>
+
+<footer>
+  <span>Shortcuts: <kbd>C</kbd> confirm, <kbd>D</kbd> dismiss, <kbd>&uarr;</kbd><kbd>&darr;</kbd> move in queue. No facial recognition. Only confirmed alerts reach residents.</span>
+  <button id="resetBtn">Clear demo data</button>
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let events = [], selectedId = null, seen = new Set(), sound = false, firstLoad = true, shownClip = null;
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmtTime = (ts) => new Date(ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+setInterval(() => { $("clock").textContent = new Date().toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" }); }, 1000);
+
+function beep() {
+  if (!sound) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.25].forEach((d) => { const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = 880; o.connect(g); g.connect(ctx.destination); g.gain.value = 0.15;
+      o.start(ctx.currentTime + d); o.stop(ctx.currentTime + d + 0.15); });
+  } catch (e) {}
+}
+$("soundBtn").onclick = () => { sound = !sound; $("soundBtn").textContent = "Sound: " + (sound ? "on" : "off"); if (sound) beep(); };
+
+async function api(path, opts) { const r = await fetch(path, opts); if (!r.ok) throw new Error(r.status); return r.json(); }
+
+// ---------------- cameras ----------------
+const camEls = {};
+async function loadCams() {
+  let cams = [];
+  try { cams = await api("/api/cameras"); } catch (e) { return; }
+  const box = $("cams");
+  if (!cams.length) return;
+  if (box.querySelector(".empty")) box.innerHTML = "";
+  for (const c of cams) {
+    let el = camEls[c.camera_id];
+    if (!el) {
+      el = document.createElement("div"); el.className = "cam";
+      el.innerHTML = `<div class="view"><img alt=""><div class="nosig" hidden>NO SIGNAL</div></div>
+        <div class="meta"><span class="name"></span><span class="badge"></span></div>`;
+      box.appendChild(el); camEls[c.camera_id] = el;
+    }
+    const status = c.stale ? "OFFLINE" : c.status;
+    el.querySelector(".name").textContent = c.name;
+    const b = el.querySelector(".badge"); b.textContent = "CAMERA " + status; b.className = "badge b-" + status.replace(" ", "");
+    el.querySelector(".nosig").hidden = !(c.stale || status === "NO SIGNAL" || status === "OFFLINE");
+    if (!c.stale && c.frame_url) {
+      const img = new Image();
+      img.onload = () => { el.querySelector("img").src = img.src; };
+      img.src = c.frame_url + "?t=" + Date.now();
+    }
+  }
+}
+
+// ---------------- alerts ----------------
+function renderDetail() {
+  const e = events.find((x) => x.id === selectedId);
+  const box = $("detail");
+  if (!e) { box.innerHTML = `<div class="empty">No alerts yet. Alerts appear here with a 10-second clip.</div>`; shownClip = null; return; }
+  const media = e.clip_url
+    ? `<video src="${e.clip_url}" autoplay loop muted playsinline controls></video>`
+    : `<img src="${e.snapshot_url || ""}" alt="Alert snapshot"><div class="rec">Recording 10-second clip...</div>`;
+  const key = e.id + "|" + (e.clip_url || "") + "|" + e.status;
+  if (shownClip === key) return;                          // avoid restarting the video every poll
+  shownClip = key;
+  const decision = e.status === "PENDING"
+    ? `<input class="note" id="note" placeholder="Note for the record (optional), e.g. 'Patrol sent to No. 12'">
+       <div class="actions"><button class="confirm" onclick="decide('confirm')">Confirm intrusion</button>
+       <button class="dismiss" onclick="decide('dismiss')">Dismiss (false alarm)</button></div>`
+    : `<div class="handled"><span class="badge b-${e.status}">${e.status}</span> at ${esc(e.handled_at)}
+       ${e.response_seconds != null ? ` &middot; response ${e.response_seconds}s` : ""}
+       ${e.status === "CONFIRMED" ? (e.notified ? " &middot; resident notified on Telegram" : " &middot; no resident linked / Telegram not set up") : ""}
+       ${e.guard_note ? `<br>Note: ${esc(e.guard_note)}` : ""}</div>`;
+  box.innerHTML = `<div class="detail">${media}<div class="body">
+      <div class="title"><span class="badge b-${e.severity}">${e.severity}</span>${esc(e.title)}</div>
+      <div class="msg">${esc(e.message)}</div>
+      <div class="sub">${esc(e.camera_name)} &middot; ${fmtTime(e.created)}${e.track_id >= 0 ? ` &middot; ${esc(e.label)} #${e.track_id}` : ""}</div>
+      ${decision}</div></div>`;
+}
+
+function renderQueue() {
+  const pending = events.filter((e) => e.status === "PENDING");
+  $("queue").innerHTML = pending.length ? pending.map((e) => `
+    <button class="item ${e.id === selectedId ? "sel" : ""}" onclick="select('${e.id}')">
+      <img src="${e.snapshot_url || ""}" alt="">
+      <div><div class="t"><span class="badge b-${e.severity}">${e.severity}</span>${esc(e.title)}</div>
+      <div class="s">${esc(e.zone_name && e.zone_name !== "camera" ? e.zone_name : e.camera_name)} &middot; ${fmtTime(e.created)}</div></div>
+    </button>`).join("") : `<div class="empty">Queue clear</div>`;
+
+  const handled = events.filter((e) => e.status !== "PENDING");
+  $("history").innerHTML = handled.length ? handled.map((e) => `<tr style="cursor:pointer" onclick="select('${e.id}')">
+      <td>${fmtTime(e.created)}</td><td>${esc(e.camera_name)}</td><td>${esc(e.title)}: ${esc(e.message)}</td>
+      <td><span class="badge b-${e.status}">${e.status}</span></td>
+      <td>${e.response_seconds != null ? e.response_seconds + "s" : "-"}</td><td>${esc(e.guard_note)}</td></tr>`).join("")
+    : `<tr><td colspan="6" style="color:var(--muted)">None yet</td></tr>`;
+}
+
+async function loadEvents() {
+  try { events = await api("/api/events"); } catch (e) { return; }
+  let fresh = false;
+  for (const e of events) { if (!seen.has(e.id)) { seen.add(e.id); if (!firstLoad && e.status === "PENDING") fresh = true; } }
+  if (fresh) beep();
+  firstLoad = false;
+  const sel = events.find((e) => e.id === selectedId);
+  if (!sel || (sel.status !== "PENDING" && fresh)) {
+    const next = events.find((e) => e.status === "PENDING") || events[0];
+    selectedId = next ? next.id : null;
+  }
+  renderQueue(); renderDetail();
+  const s = await api("/api/stats");
+  $("sPending").textContent = s.pending; $("sConfirmed").textContent = s.confirmed; $("sDismissed").textContent = s.dismissed;
+  $("sFalse").textContent = s.false_alarm_rate == null ? "-" : s.false_alarm_rate + "%";
+  $("sResp").textContent = s.avg_response_seconds == null ? "-" : s.avg_response_seconds + "s";
+  $("sAway").textContent = s.away_houses && s.away_houses.length ? s.away_houses.map((h) => "No. " + h).join(", ") : "none";
+}
+
+function select(id) { selectedId = id; shownClip = null; renderQueue(); renderDetail(); }
+
+async function decide(kind) {
+  const e = events.find((x) => x.id === selectedId);
+  if (!e || e.status !== "PENDING") return;
+  const note = ($("note") || {}).value || "";
+  await api(`/api/events/${e.id}/${kind}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note }) });
+  const next = events.find((x) => x.status === "PENDING" && x.id !== e.id);
+  selectedId = next ? next.id : e.id; shownClip = null;
+  await loadEvents();
+}
+
+document.addEventListener("keydown", (ev) => {
+  if (ev.target.tagName === "INPUT") return;
+  if (ev.key === "c" || ev.key === "C") decide("confirm");
+  if (ev.key === "d" || ev.key === "D") decide("dismiss");
+  if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+    const p = events.filter((e) => e.status === "PENDING"); const i = p.findIndex((e) => e.id === selectedId);
+    const n = p[Math.max(0, Math.min(p.length - 1, i + (ev.key === "ArrowDown" ? 1 : -1)))];
+    if (n) { select(n.id); ev.preventDefault(); }
+  }
+});
+
+$("resetBtn").onclick = async () => {
+  if (!confirm("Clear all alerts and camera tiles? (demo data only)")) return;
+  await api("/api/reset", { method: "POST" }); events = []; seen.clear(); selectedId = null; shownClip = null;
+  Object.values(camEls).forEach((el) => el.remove()); for (const k in camEls) delete camEls[k];
+  loadEvents(); loadCams();
+};
+
+loadEvents(); loadCams();
+setInterval(loadEvents, 1000);
+setInterval(loadCams, 500);
+</script>
+</body>
+</html>

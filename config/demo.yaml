@@ -1,0 +1,29 @@
+# Demo config for the synthetic test clip (samples/test_walk.mp4).
+# Thresholds are shortened so every rule fires within a few seconds.
+rules:
+  active_hours: always
+  breach_seconds: 1.0
+  away_seconds: 1.0
+  loiter_seconds: 3
+  vehicle_seconds: 3
+  grace_seconds: 3.0
+  cooldown_seconds: 30       # same rule + zone alerts at most once per this many seconds
+health:
+  offline_seconds: 5        # no video for this long = CAMERA OFFLINE
+  frozen_seconds: 5         # picture unchanged for this long = CAMERA FROZEN
+  blocked_seconds: 2        # covered / no detail for this long = CAMERA BLOCKED
+  baseline_seconds: 3       # first seconds used to learn the normal picture
+away_mode: []              # set by residents on Telegram (/away_on); or list houses here, e.g. ["12"]
+cameras:
+  demo:
+    name: CAM 00 Demo Street
+    source: samples/test_walk.mp4
+    zones:
+      - {id: house_12, type: house, house: "12", polygon: [[0.0, 0.76], [0.12, 0.76], [0.12, 1.0], [0.0, 1.0]]}
+      - {id: yard_10, type: restricted, house: "10", name: Back yard No. 10, polygon: [[0.14, 0.8], [0.26, 0.8], [0.26, 0.93], [0.14, 0.93]]}
+      - {id: house_14, type: house, house: "14", polygon: [[0.4, 0.8], [0.56, 0.8], [0.56, 1.0], [0.4, 1.0]]}
+      - {id: road_main, type: road, name: Jalan Utama, polygon: [[0.0, 0.3], [0.56, 0.3], [0.56, 0.6], [0.0, 0.6]]}
+  healthtest:
+    name: CAM 05 Back Lane
+    source: samples/health_test.mp4
+    zones: []

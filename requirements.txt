@@ -1,0 +1,8 @@
+ultralytics>=8.3
+opencv-python>=4.9
+lap>=0.5
+numpy
+pyyaml
+fastapi>=0.110
+uvicorn>=0.29
+imageio-ffmpeg>=0.5
