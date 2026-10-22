@@ -1,10 +1,37 @@
 # SENTRA
 **Security Enhancement for Network Township Residential AI**
 
-**Live prototype:** see the Prototype Link in our submission (static replay of real SENTRA output, folder `web/`).
 Turning a township's existing CCTV into a guard that never gets tired.
 
 Team Codex, Universiti Teknologi PETRONAS. Sime Darby Property University Hackathon 2026 (Township of Tomorrow, PEOPLE theme).
+
+## Try it now
+| What | Link |
+|---|---|
+| Prototype website (guard console + camera replay) | https://sentra-codex.vercel.app |
+| Resident Telegram demo bot (online 24/7) | Search **@SENTRA_Alerts_SDP_bot** in Telegram |
+
+**Telegram demo in 4 steps**
+1. Open the bot and press **Start**
+2. Send `/register 12` to link your chat to House 12
+3. Send `/away_on` to turn on Away Mode
+4. Tap **Simulate an intruder at House 12** and receive a verified alert with the real 10-second SENTRA clip
+
+## What SENTRA does
+- **Behaviour rules on existing CCTV:** perimeter breach, loitering, vehicle dwell and Away Mode breach
+- **Guard verification:** every alert comes with a 10-second clip, and the guard confirms or dismisses it
+- **Resident alerts:** only confirmed alerts reach residents (Telegram in the pilot, the Sime Darby Property app in Phase 2)
+- **Away Mode:** residents mark their house as away, and any person at that house becomes a high-priority alert
+- **Camera health:** detects cameras that go offline, frozen or blocked
+- **No facial recognition:** SENTRA only detects "person" or "vehicle" and tracks movement
+
+## Team Codex
+| Name | Role |
+|---|---|
+| Anuar Afiq Bin Arfahairy | Team Leader, Project Management |
+| Nur Farah Aleya Binti Mohamad Noor'Azlan | AI and Computer Vision |
+| Siti Zafirah Binti Zailan | Product and User Experience |
+| Ilhan Zikri Bin Zul Azlin | Research and Business |
 
 ## Build progress
 - [x] Step 1: Project setup + person/vehicle detection and tracking (YOLOv8 + ByteTrack)
@@ -13,6 +40,10 @@ Team Codex, Universiti Teknologi PETRONAS. Sime Darby Property University Hackat
 - [x] Step 4: Event clips + guard console (confirm / dismiss)
 - [x] Step 5: Resident alerts (Telegram) + Away Mode toggle
 - [x] Step 6: Showcase footage + public prototype website (`web/`)
+- [x] Step 7: Always-online Telegram demo bot (`web/api/telegram.js`)
+
+## Tech stack
+Python, Ultralytics YOLOv8n (COCO pretrained), ByteTrack, OpenCV, PyTorch (CUDA), FastAPI, SQLite, Telegram Bot API, Vercel.
 
 ## Setup
 **Windows + NVIDIA GPU:** double-click `setup_windows.bat` (one time). It should end with `CUDA available: True`.
@@ -129,8 +160,20 @@ cd web && python -m http.server 8090
 ```
 Deploy: Vercel > Add New Project > import this repo > Root Directory `web` > Framework `Other` > Deploy.
 
+## Always-online demo bot (`web/api/telegram.js`)
+A second Telegram bot that runs as a Vercel function, so anyone can try the resident side of SENTRA without the on-site system running.
+It replies to `/start`, `/register`, `/away_on`, `/away_off`, `/status` and `/demo_alert`. After `/away_on`, the **Simulate an intruder** button sends a verified alert with a real SENTRA Away Mode clip.
+It does not store any data. Every user gets the same demo house (House 12).
+
+Setup (one time):
+1. Create a second bot in @BotFather (e.g. SENTRA Demo)
+2. Vercel > Settings > Environment Variables: add `TELEGRAM_BOT_TOKEN` (demo bot token) and `TELEGRAM_SECRET` (any random word), then redeploy
+3. Open `https://<your-site>/api/telegram?setup=<TELEGRAM_SECRET>` once in a browser
+
 ## Privacy
-SENTRA does not use facial recognition. It only detects the class "person" or "vehicle" and tracks movement.
+- SENTRA does not use facial recognition. It only detects the class "person" or "vehicle" and tracks movement.
+- Clips are only shown to the guard on duty, and only guard-confirmed alerts reach residents.
+- Bot tokens and the console password are stored locally and are never committed to this repo.
 
 ## Data
 - Demo scenes are recorded by our team acting out scenarios (synthetic data).
@@ -138,3 +181,6 @@ SENTRA does not use facial recognition. It only detects the class "person" or "v
 - Public research datasets (UCF-Crime, VIRAT) are used for testing only. They are not redistributed in this repo.
 - The showcase in `web/` uses short, publicly available CCTV clips from online news reports and CCTV product demonstrations, processed by SENTRA to demonstrate detection. All rights remain with their owners; source videos are not stored in this repo.
 - No data from real township residents is used.
+
+## Disclaimer
+SENTRA is a student hackathon prototype by Team Codex. It is not an official Sime Darby Property product.
