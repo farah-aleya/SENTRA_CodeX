@@ -1,10 +1,12 @@
+# SENTRA runtime (pinned). Tested on Python 3.12 / 3.13, Windows 11 and Ubuntu 24.04.
 opencv-python==5.0.0.93
-numpy
-lap>=0.5
-pyyaml
-fastapi>=0.110
-uvicorn>=0.29
-imageio-ffmpeg>=0.5
-boto3>=1.35
-# Only needed once, to make models/yolov8n.onnx (scripts/export_onnx.py) and for the test-video helpers:
+numpy==2.5.3
+PyYAML==6.0.3
+fastapi==0.162.0
+uvicorn==0.54.0
+imageio-ffmpeg==0.6.0
+boto3==1.43.118
+# Optional: faster optimal matching in the tracker (falls back to greedy matching without it)
+# lap==0.5.12
+# Only needed once, to re-create models/yolov8n.onnx (scripts/export_onnx.py):
 #   pip install ultralytics onnx

@@ -31,6 +31,7 @@ from sentra.clips import ClipRecorder  # noqa: E402
 from sentra.health import HealthMonitor  # noqa: E402
 from sentra.privacy import PrivacyFilter  # noqa: E402
 from sentra.agent import AGENT_RULES, AgentRunner  # noqa: E402
+from sentra import cloud  # noqa: E402
 from sentra.rules import RuleEngine  # noqa: E402
 from sentra.zones import camera_zones, load_config  # noqa: E402
 
@@ -102,6 +103,10 @@ def main():
     def on_decision(eid, ev, d):
         con = store.connect()
         status = store.set_agent(con, eid, d)
+        cloud.metric("AgentDecision", 1, Action=d["action"], DecidedBy=d["decided_by"].split("+")[0])
+        cloud.metric("AgentLatency", d.get("ms", 0), "Milliseconds")
+        if "guardrail" in d.get("decided_by", ""):
+            cloud.metric("GuardrailOverride", 1)
         con.close()
         trace_log.write(json.dumps({"id": eid, "rule": ev["rule"], "camera": ev["camera_id"], **d}, default=str) + "\n")
         trace_log.flush()
@@ -136,6 +141,8 @@ def main():
             if tracks is not None:
                 draw_tracks(img, tracks, engine.dwell, alerted)
             cv2.imwrite(str(snap), img)
+            cloud.upload(str(snap).replace("\\", "/"))
+            cloud.metric("RuleFired", 1, Camera=args.camera, Rule=ev.rule)
             ev.snapshot = str(snap).replace("\\", "/")
             to_agent = agent.enabled and ev.rule in AGENT_RULES and tracks is not None
             if to_agent:
@@ -154,12 +161,13 @@ def main():
                     "live": live,
                 })
             clip_path = f"outputs/clips/{args.camera}_{eid}.mp4"
-            clips.start(clip_path, on_done=lambda p, eid=eid: store.set_clip(store.connect(), eid, p))
+            clips.start(clip_path, on_done=lambda p, eid=eid: (store.set_clip(store.connect(), eid, p), cloud.upload(p)))
             events_log.write(json.dumps({"id": eid, **ev.to_dict()}) + "\n"); events_log.flush()
             print(f"[{t:6.1f}s] {'CASE ' if to_agent else 'ALERT'} {ev.severity:<6} {ev.title}: {ev.message}"
                   + ("  (agent reviewing)" if to_agent else ""))
             state["banner"], state["banner_until"] = ev, t + 4
 
+    fps_mark = [time.time(), 0]
     frame_no, t0 = 0, time.time()
     last_live, last_away = [0.0], [0.0]
 
@@ -215,6 +223,9 @@ def main():
                 time.sleep(1.0); cap.release(); cap = open_source(src) or cap
             continue
         frame_no += 1
+        if cloud.METRICS and time.time() - fps_mark[0] >= 60:     # camera throughput, once a minute
+            cloud.metric("CameraFPS", (frame_no - fps_mark[1]) / (time.time() - fps_mark[0]), "Count/Second", Camera=args.camera)
+            fps_mark[:] = [time.time(), frame_no]
 
         # ---- camera health (Step 3) ----
         new, restored = health.update(frame, t)
@@ -246,6 +257,7 @@ def main():
             break
 
     agent.close()                                       # finish open agent cases
+    cloud.flush()
     trace_log.close()
     for th in clips.flush():                            # save clips that were still recording
         th.join()

@@ -21,11 +21,11 @@ from datetime import datetime
 from pathlib import Path
 
 from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from sentra import auth, store  # noqa: E402
+from sentra import auth, cloud, store  # noqa: E402
 
 OUT = ROOT / "outputs"
 OUT.mkdir(exist_ok=True)
@@ -136,14 +136,19 @@ def _shape(e, user):
 @app.get("/media/{path:path}")
 def media(path: str, user=Depends(current_user)):
     f = (OUT / path).resolve()
-    if OUT.resolve() not in f.parents or not f.is_file():
+    if OUT.resolve() not in f.parents:
         raise HTTPException(404)
     rel = "outputs/" + path
     if user["role"] != "guard":
         row = db.execute("SELECT * FROM events WHERE clip=? OR snapshot=?", (rel, rel)).fetchone()
         if not row or not visible(dict(row), user):
             raise HTTPException(403)
-    return FileResponse(f, headers={"Cache-Control": "private, max-age=60"})
+    if f.is_file():
+        return FileResponse(f, headers={"Cache-Control": "private, max-age=60"})
+    url = cloud.presigned_url(rel) if not path.startswith("live/") else None   # older evidence lives in S3
+    if url:
+        return RedirectResponse(url, status_code=302)
+    raise HTTPException(404)
 
 
 # ---------------- data ----------------
@@ -201,6 +206,8 @@ def _decide(eid, status, note, user):
         raise HTTPException(404, "Alert not found")
     if e["status"] == "PENDING":
         store.set_status(db, eid, status, (note or "")[:300], user["username"])
+        cloud.metric("GuardDecision", 1, Decision=status)
+        cloud.metric("GuardResponseTime", time.time() - e["created"], "Seconds")
     return _shape(store.get_event(db, eid), user)
 
 

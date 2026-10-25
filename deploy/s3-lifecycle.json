@@ -1,0 +1,6 @@
+{
+  "Rules": [
+    {"ID": "delete-clips-after-7-days", "Status": "Enabled", "Filter": {"Prefix": "clips/"}, "Expiration": {"Days": 7}},
+    {"ID": "delete-snapshots-after-7-days", "Status": "Enabled", "Filter": {"Prefix": "snapshots/"}, "Expiration": {"Days": 7}}
+  ]
+}

@@ -93,7 +93,8 @@ if __name__ == "__main__":
     if not args.no_browser:
         threading.Timer(1.5, lambda: webbrowser.open(local)).start()
     try:
-        uvicorn.run("console.app:app", host=host, port=args.port, log_level="warning")
+        uvicorn.run("console.app:app", host=host, port=args.port, log_level="warning",
+                    proxy_headers=True, forwarded_allow_ips="127.0.0.1")     # behind Caddy on EC2: real https scheme
     finally:
         if tunnel:
             tunnel.terminate()
