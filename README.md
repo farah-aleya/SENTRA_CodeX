@@ -7,6 +7,8 @@ and a human guard approves before any resident is alerted.
 
 Team Codex, Universiti Teknologi PETRONAS · OpenCV AI Competition 2026, powered by AWS · Agentic Vision path
 
+> Looking for the Sime Darby Property University Hackathon 2026 version (Telegram bot and Vercel prototype)? It is on the [`sdp-hackathon`](https://github.com/farah-aleya/SENTRA_CodeX/tree/sdp-hackathon) branch.
+
 | | |
 |---|---|
 | Live web endpoint (AWS) | https://13-239-96-244.sslip.io |
