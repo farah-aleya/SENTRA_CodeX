@@ -140,5 +140,7 @@ How the agent separated the cases (quotes from its own `log_only` / `request_hum
 - **Transparency and audit.** Every decision keeps its full trace; the false-alarm rate and response time are visible to management.
 - **Bias.** The detector can miss people in low light, unusual poses (climbing) or small sizes, and performance may differ across clothing and skin tones. Missed detections mean missed alerts, which is why the system adds an agent re-check, camera health checks and a human rather than replacing guards.
 
-## 10. Team
-Nur Farah Aleya Binti Mohamad Noor'Azlan (representative) · Ilhan Zikri Bin Zul Azlin · Anuar Afiq Bin Arfahairy · Siti Zafirah Binti Zailan
+## 10. Team and credits
+Team Codex, Universiti Teknologi PETRONAS: **Nur Farah Aleya Binti Mohamad Noor'Azlan** (team representative), **Ilhan Zikri Bin Zul Azlin**, **Anuar Afiq Bin Arfahairy** and **Siti Zafirah Binti Zailan**.
+
+Built with OpenCV 5 (Apache-2.0), YOLOv8n weights by Ultralytics (AGPL-3.0), the YuNet face detector from OpenCV Zoo (MIT), COCO128 (CC BY 4.0), FastAPI, boto3, Caddy, and Amazon Bedrock, EC2, S3 and CloudWatch. Demo clips belong to their original owners and are used for non-commercial testing only. © 2026 Team Codex, all rights reserved; judges may run and evaluate the code.

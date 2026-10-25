@@ -120,12 +120,25 @@ python scripts/eval_agent.py --modes rules local bedrock                      # 
 ## Team Codex
 | Name | Role |
 |---|---|
-| Nur Farah Aleya Binti Mohamad Noor'Azlan | Team representative, AI and computer vision, AWS |
-| Ilhan Zikri Bin Zul Azlin | OpenCV pipeline, research |
-| Anuar Afiq Bin Arfahairy | Evaluation, project management |
+| Nur Farah Aleya Binti Mohamad Noor'Azlan | Team representative, AI and computer vision, agent, AWS |
+| Ilhan Zikri Bin Zul Azlin | Research, OpenCV pipeline |
+| Anuar Afiq Bin Arfahairy | Project management, evaluation |
 | Siti Zafirah Binti Zailan | Product, user experience, video |
 
-## Third-party components
-OpenCV 5 (Apache-2.0) · YOLOv8n weights by Ultralytics (AGPL-3.0) · YuNet face detector from OpenCV Zoo (MIT) ·
-FastAPI, Uvicorn, boto3, NumPy (permissive licences) · Caddy (Apache-2.0).
+## Licence and credits
+**SENTRA © 2026 Team Codex. All rights reserved.** Judges and organisers of the OpenCV AI Competition 2026 may view, run and evaluate the code. See [LICENSE](LICENSE).
+
+SENTRA is built on the work of others:
+| Component | Credit | Licence |
+|---|---|---|
+| OpenCV 5 | OpenCV team and contributors | Apache-2.0 |
+| YOLOv8n weights | Ultralytics | AGPL-3.0 |
+| YuNet face detector | Shiqi Yu et al., OpenCV Zoo | MIT |
+| COCO128 test images | COCO Consortium, packaged by Ultralytics | CC BY 4.0 |
+| FastAPI, Uvicorn, NumPy, PyYAML, boto3, imageio-ffmpeg | their maintainers | MIT / BSD / Apache-2.0 |
+| Caddy | Caddy authors | Apache-2.0 |
+| Outfit and DM Sans fonts | Google Fonts | SIL Open Font License |
+| Claude Haiku 4.5 (Anthropic), Amazon Nova, Amazon Bedrock, EC2, S3, CloudWatch | Amazon Web Services | AWS service terms |
+| Demo and evaluation clips | their original owners (home-camera and CCTV users, news outlets, social media creators) | used for non-commercial testing only, not redistributed |
+
 SENTRA is a student prototype and not an official product of any company.
