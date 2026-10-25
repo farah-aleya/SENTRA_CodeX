@@ -30,6 +30,7 @@ from sentra import store  # noqa: E402
 from sentra.clips import ClipRecorder  # noqa: E402
 from sentra.health import HealthMonitor  # noqa: E402
 from sentra.privacy import PrivacyFilter  # noqa: E402
+from sentra.agent import AGENT_RULES, AgentRunner  # noqa: E402
 from sentra.rules import RuleEngine  # noqa: E402
 from sentra.zones import camera_zones, load_config  # noqa: E402
 
@@ -52,6 +53,8 @@ def main():
     ap.add_argument("--show", action="store_true", help="open a live preview window (q to quit)")
     ap.add_argument("--realtime", action="store_true", help="play video files at normal speed (for the live console)")
     ap.add_argument("--loop", action="store_true", help="restart the video file when it ends (for demos)")
+    ap.add_argument("--agent", choices=["bedrock", "local", "off"], default=None,
+                    help="who triages alerts: bedrock (Claude/Nova on AWS), local (offline policy), off (old behaviour)")
     ap.add_argument("--no-blur", action="store_true", help="turn OFF face/head blur (offline evaluation only, never for demos)")
     args = ap.parse_args()
 
@@ -88,8 +91,35 @@ def main():
     if args.no_blur:
         cfg.setdefault("privacy", {})["blur"] = False
     privacy = PrivacyFilter(cfg)
+    if args.agent:
+        acfg = cfg.setdefault("agent", {}) or {}
+        cfg["agent"] = acfg
+        acfg["enabled"] = args.agent != "off"
+        if args.agent != "off":
+            acfg["provider"] = args.agent
+    trace_log = open(out_dir / "agent_trace.jsonl", "a", encoding="utf-8")
+
+    def on_decision(eid, ev, d):
+        con = store.connect()
+        status = store.set_agent(con, eid, d)
+        con.close()
+        trace_log.write(json.dumps({"id": eid, "rule": ev["rule"], "camera": ev["camera_id"], **d}, default=str) + "\n")
+        trace_log.flush()
+        steps = [x["name"] for x in d["trace"] if x.get("type") == "tool_call"] or \
+                [x["name"] for x in d["trace"] if x.get("type") == "tool_result"]
+        print(f"   [agent {eid}] {' > '.join(steps) or '-'} => {d['action']} {d.get('priority', '')} "
+              f"({d['decided_by']}, {d.get('model')}, {d['ms']} ms) -> {status}: {d['summary'][:110]}")
+
+    agent = AgentRunner(cfg, det, store.DB_PATH, fps, (w, h), on_decision=on_decision)
+    first_seen = {}
     print(f"SENTRA running on '{cam_name}' | {len(zones)} zones | device: {det.device}")
     print(f"Privacy: face + head blur {'ON' if privacy.enabled else 'OFF (evaluation mode)'}")
+    if agent.enabled:
+        a = agent.agent.cfg
+        print(f"Agent: {a['provider']} | model {a['model_id'] if a['provider'] == 'bedrock' else 'local policy'} "
+              f"| re-check window {a['recheck_seconds']}s")
+    else:
+        print("Agent: OFF (alerts go straight to the guard)")
     if engine.away_houses:
         print(f"Away Mode ON for: {', '.join(sorted(engine.away_houses))}")
 
@@ -107,11 +137,26 @@ def main():
                 draw_tracks(img, tracks, engine.dwell, alerted)
             cv2.imwrite(str(snap), img)
             ev.snapshot = str(snap).replace("\\", "/")
+            to_agent = agent.enabled and ev.rule in AGENT_RULES and tracks is not None
+            if to_agent:
+                ev.status = "REVIEWING"                 # the agent decides if a human must look
             eid = store.add_event(db, ev.to_dict())
+            if to_agent:
+                tr = next((x for x in tracks if x.track_id == ev.track_id), None)
+                zone = next((z for z in zones if z.id == ev.zone_id), None)
+                agent.open(eid, ev.to_dict(), zone, {
+                    "box": tr.box if tr else None,
+                    "dwell": round(engine.dwell.get((ev.track_id, ev.zone_id), 0), 1),
+                    "tracked_for": round(t - first_seen.get(ev.track_id, t), 1),
+                    "people": sum(x.is_person for x in tracks),
+                    "vehicles": sum(not x.is_person for x in tracks),
+                    "away": bool(zone and zone.house and str(zone.house) in engine.away_houses),
+                })
             clip_path = f"outputs/clips/{args.camera}_{eid}.mp4"
             clips.start(clip_path, on_done=lambda p, eid=eid: store.set_clip(store.connect(), eid, p))
             events_log.write(json.dumps({"id": eid, **ev.to_dict()}) + "\n"); events_log.flush()
-            print(f"[{t:6.1f}s] ALERT {ev.severity:<6} {ev.title}: {ev.message}")
+            print(f"[{t:6.1f}s] {'CASE ' if to_agent else 'ALERT'} {ev.severity:<6} {ev.title}: {ev.message}"
+                  + ("  (agent reviewing)" if to_agent else ""))
             state["banner"], state["banner_until"] = ev, t + 4
 
     frame_no, t0 = 0, time.time()
@@ -175,6 +220,9 @@ def main():
         for name in restored:
             print(f"[{t:6.1f}s] RESTORED {name}")
         tracks = det.track(frame)
+        for x in tracks:
+            first_seen.setdefault(x.track_id, t)
+        agent.push(frame, tracks)                       # raw frame, kept in memory for the agent's re-check
         privacy.apply(frame, tracks)                    # blur faces/heads before anything is saved or shown
         handle(new, frame, tracks, t, frame_no)
 
@@ -196,6 +244,8 @@ def main():
         if not emit(frame, t):
             break
 
+    agent.close()                                       # finish open agent cases
+    trace_log.close()
     for th in clips.flush():                            # save clips that were still recording
         th.join()
     time.sleep(0.5)

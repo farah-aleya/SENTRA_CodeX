@@ -5,5 +5,6 @@ pyyaml
 fastapi>=0.110
 uvicorn>=0.29
 imageio-ffmpeg>=0.5
+boto3>=1.35
 # Only needed once, to make models/yolov8n.onnx (scripts/export_onnx.py) and for the test-video helpers:
 #   pip install ultralytics onnx

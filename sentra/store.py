@@ -36,6 +36,13 @@ CREATE TABLE IF NOT EXISTS cameras (
 """
 
 
+# agent fields: decision (REQUEST_APPROVAL / LOG_ONLY), priority, summary, who decided, model, time, full trace
+AGENT_COLS = ["agent_action", "agent_priority", "agent_summary", "agent_decided_by", "agent_model",
+              "agent_ms", "agent_trace"]
+# event status: REVIEWING (agent working) -> PENDING (waiting for a human) or LOGGED (no alert)
+#               PENDING -> CONFIRMED / DISMISSED by the guard
+
+
 def connect(path=DB_PATH) -> sqlite3.Connection:
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(str(path), timeout=5, check_same_thread=False)
@@ -44,17 +51,32 @@ def connect(path=DB_PATH) -> sqlite3.Connection:
     cols = {r[1] for r in con.execute("PRAGMA table_info(events)")}
     if "house" not in cols:                       # upgrade a Step 4 database
         con.execute("ALTER TABLE events ADD COLUMN house TEXT DEFAULT ''"); con.commit()
+    for col in AGENT_COLS:                        # upgrade for the agent (OpenCV competition)
+        if col not in cols:
+            con.execute(f"ALTER TABLE events ADD COLUMN {col} TEXT DEFAULT ''")
+    con.commit()
     return con
 
 
 def add_event(con, ev: dict) -> str:
     eid = uuid.uuid4().hex[:8]
     cols = ["rule", "severity", "title", "message", "camera_id", "camera_name", "zone_id", "zone_name",
-            "track_id", "label", "video_time", "wall_time", "snapshot", "clip", "house"]
+            "track_id", "label", "video_time", "wall_time", "snapshot", "clip", "house", "status"]
     con.execute(f"INSERT INTO events (id, created, {', '.join(cols)}) VALUES (?, ?, {', '.join('?' * len(cols))})",
                 [eid, time.time(), *[ev.get(c) for c in cols]])
     con.commit()
     return eid
+
+
+def set_agent(con, eid: str, d: dict):
+    """Save the agent decision and move the event to PENDING (needs a human) or LOGGED."""
+    status = "PENDING" if d.get("action") == "REQUEST_APPROVAL" else "LOGGED"
+    con.execute("UPDATE events SET status=?, agent_action=?, agent_priority=?, agent_summary=?, agent_decided_by=?, "
+                "agent_model=?, agent_ms=?, agent_trace=? WHERE id=? AND status='REVIEWING'",
+                (status, d.get("action", ""), d.get("priority", ""), d.get("summary", ""), d.get("decided_by", ""),
+                 d.get("model") or "", str(d.get("ms", "")), json.dumps(d.get("trace", []), default=str), eid))
+    con.commit()
+    return status
 
 
 def set_clip(con, eid: str, clip: str):

@@ -121,13 +121,15 @@ def cameras():
 @app.get("/api/stats")
 def stats():
     ev = [_shape(e) for e in store.list_events(db, 1000)]
-    handled = [e for e in ev if e["status"] != "PENDING"]
+    handled = [e for e in ev if e["status"] in ("CONFIRMED", "DISMISSED")]
     dismissed = [e for e in handled if e["status"] == "DISMISSED"]
     resp = [e["response_seconds"] for e in handled if "response_seconds" in e]
     return {
         "pending": sum(e["status"] == "PENDING" for e in ev),
         "confirmed": sum(e["status"] == "CONFIRMED" for e in ev),
         "dismissed": len(dismissed),
+        "reviewing": sum(e["status"] == "REVIEWING" for e in ev),
+        "logged_by_agent": sum(e["status"] == "LOGGED" for e in ev),
         "false_alarm_rate": round(100 * len(dismissed) / len(handled)) if handled else None,
         "avg_response_seconds": round(sum(resp) / len(resp), 1) if resp else None,
         "away_houses": sorted(store.away_houses(db)),
