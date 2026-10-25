@@ -29,6 +29,7 @@ from sentra.draw import (draw_alert_banner, draw_header, draw_no_signal, draw_st
 from sentra import store  # noqa: E402
 from sentra.clips import ClipRecorder  # noqa: E402
 from sentra.health import HealthMonitor  # noqa: E402
+from sentra.privacy import PrivacyFilter  # noqa: E402
 from sentra.rules import RuleEngine  # noqa: E402
 from sentra.zones import camera_zones, load_config  # noqa: E402
 
@@ -51,6 +52,7 @@ def main():
     ap.add_argument("--show", action="store_true", help="open a live preview window (q to quit)")
     ap.add_argument("--realtime", action="store_true", help="play video files at normal speed (for the live console)")
     ap.add_argument("--loop", action="store_true", help="restart the video file when it ends (for demos)")
+    ap.add_argument("--no-blur", action="store_true", help="turn OFF face/head blur (offline evaluation only, never for demos)")
     args = ap.parse_args()
 
     cfg = load_config(args.config)
@@ -83,7 +85,11 @@ def main():
     health = HealthMonitor(cfg, args.camera, cam_name)
     det = Detector(args.weights, conf=args.conf or cam.get("conf", 0.35), imgsz=cam.get("imgsz", 640),
                    device=args.device)                # night / small cameras can use a lower conf + bigger imgsz
+    if args.no_blur:
+        cfg.setdefault("privacy", {})["blur"] = False
+    privacy = PrivacyFilter(cfg)
     print(f"SENTRA running on '{cam_name}' | {len(zones)} zones | device: {det.device}")
+    print(f"Privacy: face + head blur {'ON' if privacy.enabled else 'OFF (evaluation mode)'}")
     if engine.away_houses:
         print(f"Away Mode ON for: {', '.join(sorted(engine.away_houses))}")
 
@@ -169,6 +175,7 @@ def main():
         for name in restored:
             print(f"[{t:6.1f}s] RESTORED {name}")
         tracks = det.track(frame)
+        privacy.apply(frame, tracks)                    # blur faces/heads before anything is saved or shown
         handle(new, frame, tracks, t, frame_no)
 
         # ---- zone rules (Step 2) + Away Mode from Telegram (Step 5) ----
@@ -196,6 +203,7 @@ def main():
     cap.release(); writer.release(); events_log.close(); cv2.destroyAllWindows()
     dt = time.time() - t0
     print(f"\nDone: {frame_no} frames, {frame_no / max(dt, 1e-6):.1f} FPS, {state['n']} alerts. Video: {out_video}")
+    print(f"Privacy: {privacy.faces_blurred} face and {privacy.heads_blurred} head regions blurred")
     print("Open the guard console to review alerts:  python scripts/run_console.py")
 
 
