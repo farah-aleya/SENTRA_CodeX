@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def export(weights: Path, imgsz: int):
     from ultralytics import YOLO
-    out = YOLO(str(weights)).export(format="onnx", imgsz=imgsz, opset=17, simplify=True, dynamic=False)
+    out = YOLO(str(weights)).export(format="onnx", imgsz=imgsz, opset=17, simplify=True, dynamic=True)
     print(f"Saved {out}")
 
 

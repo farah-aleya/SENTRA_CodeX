@@ -6,3 +6,6 @@ samples/*.mp4
 !samples/.gitkeep
 config/telegram.yaml
 config/console.yaml
+
+# third-party footage: local testing only, never pushed
+dataset/
