@@ -1,187 +1,131 @@
 # SENTRA
 **Security Enhancement for Network Township Residential AI**
 
-Turning a township's existing CCTV into a guard that never gets tired.
+Existing township CCTV, turned into a guard that double-checks before it raises an alarm.
+OpenCV 5 watches the cameras, an AI agent on Amazon Bedrock re-examines every alert with OpenCV tools,
+and a human guard approves before any resident is alerted.
 
-Team Codex, Universiti Teknologi PETRONAS. Sime Darby Property University Hackathon 2026 (Township of Tomorrow, PEOPLE theme).
+Team Codex, Universiti Teknologi PETRONAS · OpenCV AI Competition 2026, powered by AWS · Agentic Vision path
 
-## Try it now
-| What | Link |
+| | |
 |---|---|
-| Prototype website (guard console + camera replay) | https://sentra-codex.vercel.app |
-| Resident Telegram bot (online 24/7) | [@SENTRA_Alerts_SDP_bot](https://t.me/SENTRA_Alerts_SDP_bot) |
+| Live web endpoint (AWS) | https://13-239-96-244.sslip.io |
+| Demo video (≤ 5 min) | _link added at submission_ |
+| Technical report | [docs/REPORT.md](docs/REPORT.md) |
+| Judge login | guard and resident accounts are listed in the private submission notes |
 
-**Telegram demo in 4 steps**
-1. Open [@SENTRA_Alerts_SDP_bot](https://t.me/SENTRA_Alerts_SDP_bot) and press **Start**
-2. Send `/register 12` to link your chat to House 12
-3. Send `/away_on` to turn on Away Mode
-4. Tap **Simulate an intruder at House 12** and receive a verified alert with the real 10-second SENTRA clip
+![Architecture](docs/architecture.png)
 
-## What SENTRA does
-- **Behaviour rules on existing CCTV:** perimeter breach, loitering, vehicle dwell and Away Mode breach
-- **Guard verification:** every alert comes with a 10-second clip, and the guard confirms or dismisses it
-- **Resident alerts:** only confirmed alerts reach residents (Telegram in the pilot, the Sime Darby Property app in Phase 2)
-- **Away Mode:** residents mark their house as away, and any person at that house becomes a high-priority alert
-- **Camera health:** detects cameras that go offline, frozen or blocked
-- **No facial recognition:** SENTRA only detects "person" or "vehicle" and tracks movement
+## What it does
+1. **Watch (OpenCV 5).** YOLOv8n runs in `cv.dnn` (OpenCV 5 new DNN engine, dynamic-shape ONNX). A small IoU tracker follows people and vehicles, and zone rules (`cv.pointPolygonTest`) fire on perimeter breach, loitering, vehicle dwell and Away Mode breach. Camera health checks catch blocked, frozen and offline cameras.
+2. **Protect privacy first.** Faces are found with OpenCV's YuNet (`cv.FaceDetectorYN`) and pixelated, together with the head area of every person, before any frame is saved or shown. No facial recognition is used anywhere.
+3. **Re-check with an agent (Amazon Bedrock).** Every rule hit opens a case. Claude Haiku 4.5 calls OpenCV 5 tools (`recheck_region`: crop, upscale, CLAHE, re-detect, Farneback optical flow) plus context tools, looks again when the evidence is weak, and then either **requests human approval** or **logs** the event. Guardrails in code stop it from logging a HIGH alert when OpenCV still sees a person.
+4. **Human decides.** The guard gets a live pop-up with the clip, the agent's summary and its step-by-step trace, and presses **Approve alarm** or **Dismiss**. Only approved alerts reach the resident.
+
+![Agent workflow](docs/agent_workflow.png)
+
+## OpenCV 5 in SENTRA
+| Where | OpenCV 5 API |
+|---|---|
+| Detection | `cv.dnn.readNetFromONNX` (new engine, dynamic input size), `blobFromImage`, `NMSBoxesBatched` |
+| Zones | `cv.pointPolygonTest`, `fillPoly`, `polylines` |
+| Privacy | `cv.FaceDetectorYN` (YuNet), pixelation with `resize` |
+| Agent tool `recheck_region` | crop + `resize(INTER_CUBIC)`, `createCLAHE` on LAB, `cv.dnn` re-detection, `calcOpticalFlowFarneback`, HSV/colour checks for low light and infrared |
+| Camera health | `Laplacian` variance (blocked lens), frame difference (frozen), brightness |
+| Video | `VideoCapture` (files, webcams, RTSP), `VideoWriter`, drawing overlays |
+
+## AWS in SENTRA
+| Service | Use |
+|---|---|
+| Amazon EC2 (`m7i-flex.large`, Ubuntu 24.04) | runs the cameras, the agent and the web app as systemd services; HTTPS through Caddy |
+| Amazon Bedrock | the agent: Converse API with tool use, `au.anthropic.claude-haiku-4-5` (Australian inference profile), Amazon Nova Lite as fallback |
+| Amazon S3 | blurred snapshots and 10-second clips, server-side encrypted, deleted after 7 days by a lifecycle rule, served by short-lived presigned links |
+| Amazon CloudWatch | custom metrics in namespace `SENTRA`: RuleFired, AgentDecision, AgentLatency, GuardrailOverride, GuardDecision, GuardResponseTime, CameraFPS |
+| AWS IAM | instance role with a least-privilege policy ([deploy/iam-policy.json](deploy/iam-policy.json)); no access keys on the server |
+
+## Results
+| Test | Result |
+|---|---|
+| OpenCV 5 `cv.dnn` vs original PyTorch, COCO128 person AP50 | **0.768** vs 0.766 (no accuracy lost) |
+| Agreement with PyTorch on 150 CCTV frames | F1 0.93, matched-box IoU 0.98 |
+| Speed, 2 CPU cores | 103 ms per frame (9.7 FPS) vs 78 ms for PyTorch |
+| Agent vs rules only, 11 labelled cases | false alarms to the guard **4 → 0**, real events kept **7 / 7**, median decision 11.2 s |
+
+Method, tables and failure cases: [docs/REPORT.md](docs/REPORT.md).
+Raw outputs: [eval/detector_results.json](eval/detector_results.json), [eval/agent_results_bedrock.json](eval/agent_results_bedrock.json),
+[eval/bedrock_traces.jsonl](eval/bedrock_traces.jsonl), [eval/agent_results_rules_local.json](eval/agent_results_rules_local.json).
+
+## Run it on a laptop (Windows, macOS or Linux, Python 3.12+)
+```bash
+python -m venv .venv
+.venv\Scripts\activate            # Windows   (macOS/Linux: source .venv/bin/activate)
+pip install -r requirements.txt   # pinned versions, OpenCV 5.0.0
+python scripts/export_onnx.py --check
+```
+Put demo videos in `samples/` (see **Data** below), then:
+```bash
+python scripts/run_console.py                          # terminal 1: web app on http://127.0.0.1:8000
+python scripts/run_cameras.py --cameras gate porch door # terminal 2: cameras + agent
+```
+Create a **Guard** account (invite code `codex-guard` locally, or set `SENTRA_GUARD_CODE`) and a **Resident** account (house `12`).
+The agent uses Amazon Bedrock when AWS credentials are available (`aws configure`, region `ap-southeast-2`);
+without them it falls back to the local policy automatically, or run with `--agent local`.
+
+| Script | Purpose |
+|---|---|
+| `scripts/run_sentra.py --camera porch --config config/showcase.yaml --show` | one camera, with a preview window |
+| `scripts/run_cameras.py` | several cameras, looped like live CCTV |
+| `scripts/run_console.py` | web app (`--lan`, `--tunnel`, `--host`, `--port`) |
+| `scripts/draw_zones.py` | draw zones on your own footage |
+| `scripts/eval_detector.py` | evaluation 1: OpenCV 5 vs PyTorch accuracy, agreement and speed |
+| `scripts/eval_agent.py` | evaluation 2: rules only vs local policy vs Bedrock agent |
+| `scripts/export_onnx.py` | re-create the ONNX model (needs `pip install ultralytics onnx` once) |
+
+## Deploy on AWS
+1. Create an S3 bucket, add the 7-day lifecycle rule and upload the demo videos:
+   ```bash
+   aws s3 mb s3://<bucket> --region ap-southeast-2
+   aws s3api put-bucket-lifecycle-configuration --bucket <bucket> --lifecycle-configuration file://deploy/s3-lifecycle.json
+   aws s3 cp samples s3://<bucket>/samples/ --recursive
+   ```
+2. Create an IAM policy from [deploy/iam-policy.json](deploy/iam-policy.json) (replace `BUCKET_NAME`) and an EC2 role `sentra-ec2-role` with it.
+3. Launch Ubuntu 24.04 on `m7i-flex.large` with that role, 20 GB disk, ports 22/80/443 open.
+4. In EC2 Instance Connect:
+   ```bash
+   curl -sSL https://raw.githubusercontent.com/farah-aleya/SENTRA_CodeX/main/deploy/setup_ec2.sh -o setup.sh
+   sudo bash setup.sh <bucket>
+   ```
+   It installs everything, starts `sentra-web`, `sentra-cameras` and Caddy, and prints the HTTPS address and a random guard invite code.
+   Logs: `journalctl -u sentra-cameras -f`. Settings: `/etc/sentra.env`.
+
+## Test
+```bash
+python scripts/eval_detector.py --images datasets/coco128 --videos samples   # needs: pip install ultralytics
+python scripts/eval_agent.py --modes rules local bedrock                      # bedrock needs AWS credentials
+```
+
+## Responsible use
+- **No facial recognition.** SENTRA only detects the classes person and vehicle. Faces and heads are pixelated before storage.
+- **Human in control.** The agent can only log or ask; nothing reaches a resident without a guard's approval. Guardrails in code override the model for HIGH alerts.
+- **Data minimisation.** Bedrock receives only numbers and labels (counts, confidences, zone names), never images. Raw frames for the re-check stay in memory for a few seconds.
+- **Retention.** Evidence in S3 is encrypted and deleted after 7 days.
+- **Access control.** Separate guard and resident roles, hashed passwords (PBKDF2), HttpOnly session cookies, clips served only to users allowed to see that alert, HTTPS.
+- **Transparency.** Every agent decision is stored with its full tool trace and shown to the guard.
+
+## Data
+- Demo and evaluation clips are short, publicly posted CCTV and doorbell videos used for **non-commercial testing only**. They are not stored in this repository (`samples/` and `dataset/` are git-ignored), all rights remain with their owners, and faces are pixelated in every SENTRA output. They can be replaced with any footage by editing `config/*.yaml`.
+- COCO128 (CC BY 4.0) is used for the detector accuracy test.
+- No data from real township residents is used.
 
 ## Team Codex
 | Name | Role |
 |---|---|
-| Anuar Afiq Bin Arfahairy | Team Leader, Project Management |
-| Nur Farah Aleya Binti Mohamad Noor'Azlan | AI and Computer Vision |
-| Siti Zafirah Binti Zailan | Product and User Experience |
-| Ilhan Zikri Bin Zul Azlin | Research and Business |
+| Nur Farah Aleya Binti Mohamad Noor'Azlan | Team representative, AI and computer vision, AWS |
+| Ilhan Zikri Bin Zul Azlin | OpenCV pipeline, research |
+| Anuar Afiq Bin Arfahairy | Evaluation, project management |
+| Siti Zafirah Binti Zailan | Product, user experience, video |
 
-## Build progress
-- [x] Step 1: Project setup + person/vehicle detection and tracking (YOLOv8 + ByteTrack)
-- [x] Step 2: Zones + rule engine (perimeter breach, loitering, vehicle dwell, Away Mode)
-- [x] Step 3: Camera health check (offline, frozen, blocked)
-- [x] Step 4: Event clips + guard console (confirm / dismiss)
-- [x] Step 5: Resident alerts (Telegram) + Away Mode toggle
-- [x] Step 6: Showcase footage + public prototype website (`web/`)
-- [x] Step 7: Always-online Telegram demo (`web/api/telegram.js`)
-
-## Tech stack
-Python, Ultralytics YOLOv8n (COCO pretrained), ByteTrack, OpenCV, PyTorch (CUDA), FastAPI, SQLite, Telegram Bot API, Vercel.
-
-## Setup
-**Windows + NVIDIA GPU:** double-click `setup_windows.bat` (one time). It should end with `CUDA available: True`.
-
-**Other systems (Python 3.10+):**
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-Every new terminal on Windows: `.venv\Scripts\activate`
-The model file `models/yolov8n.pt` is included. If missing, Ultralytics downloads it on first run.
-
-## Step 1: Detection + tracking
-```bash
-python scripts/make_test_video.py                              # quick synthetic test clip
-python scripts/run_detect.py --source samples/test_walk.mp4    # writes outputs/step1_detect.mp4
-python scripts/run_detect.py --source 0 --show                 # live laptop webcam, press q to quit
-python scripts/run_detect.py --source your_video.mp4 --show    # your own recorded footage
-```
-Each person and vehicle gets a box and a stable ID (`person #3`). The dot at the bottom of the box is the "foot point" used in Step 2 to check if someone is inside a zone.
-
-## Step 2: Zones + rules
-| Rule | Fires when | Severity |
-|---|---|---|
-| Perimeter breach | a person is inside a `restricted` zone (e.g. climbed over the fence) | HIGH |
-| Away Mode breach | a person is at a `house` zone whose house number is in `away_mode` | HIGH |
-| Loitering | a person stays in one `house` zone longer than `loiter_seconds` | MEDIUM |
-| Vehicle dwell | a vehicle stays in a `road` zone longer than `vehicle_seconds` | MEDIUM |
-
-```bash
-# 1. Test on the demo clip (all four rules fire)
-python scripts/run_sentra.py --camera demo --config config/demo.yaml --show
-
-# 2. Draw zones on your own footage, then run it
-python scripts/draw_zones.py --camera gate01 --source samples/my_gate_clip.mp4 --name "CAM 01 Front Gate"
-python scripts/run_sentra.py --camera gate01 --show
-```
-Outputs: `outputs/<camera>_annotated.mp4`, `outputs/events.jsonl`, `outputs/snapshots/`.
-Thresholds and Away Mode are in `config/site.yaml`. Lower `loiter_seconds` and `vehicle_seconds` for short demo clips.
-
-## Step 3: Camera health
-| Check | Fires when | Severity |
-|---|---|---|
-| Camera offline | no video received for `offline_seconds` | HIGH |
-| Camera blocked | lens covered or sprayed: picture loses its detail, or goes almost black | HIGH |
-| Camera frozen | picture does not change at all for `frozen_seconds` | MEDIUM |
-
-The first `baseline_seconds` are used to learn what the normal picture looks like. Each check sends a "RESTORED" message when the camera recovers. The status badge (top right) shows `CAMERA OK / FROZEN / BLOCKED / NO SIGNAL / OFFLINE`.
-
-```bash
-python scripts/make_health_test.py
-python scripts/run_sentra.py --camera healthtest --config config/demo.yaml --simulate-offline 22-29 --show
-```
-Expected: frozen at about 9s, blocked at 16s, offline at 27s, each followed by RESTORED.
-Live cameras reconnect automatically when the stream drops.
-
-## Step 4: Guard console
-Every alert is saved with a snapshot and a **10-second clip** (4 s before, 6 s after) in `outputs/clips/`.
-The guard console is a web page that shows live camera tiles, the alert queue and the clip,
-with **Confirm** and **Dismiss** buttons. It also tracks the pilot KPIs: false alarm rate and average response time.
-
-```bash
-# Terminal 1: the console (opens http://127.0.0.1:8000)
-python scripts/run_console.py
-
-# Terminal 2: a camera, played at normal speed and looped so it looks live
-python scripts/run_sentra.py --camera demo --config config/demo.yaml --realtime --loop --show
-```
-Or double-click `demo_live.bat` to start both. Shortcuts in the console: `C` confirm, `D` dismiss, arrow keys move in the queue.
-
-## Step 5: Resident alerts on Telegram
-Only alerts **confirmed by the guard** reach residents, with the 10-second clip.
-Residents control Away Mode from Telegram, and SENTRA picks it up within a second.
-
-| Command | What it does |
-|---|---|
-| `/register 12` | link this chat to House 12 |
-| `/away_on` or `/away_on 3` | Away Mode on (optionally for 3 days) |
-| `/away_off` | Away Mode off |
-| `/status` | house, Away Mode and recent alerts |
-| `/manager` | (team) receive camera health alerts in this chat |
-
-Who receives a confirmed alert: house alerts go to that house's residents, street and vehicle alerts go to all residents, camera health alerts go to `/manager` chats.
-
-```bash
-python scripts/setup_telegram.py     # one time: paste the token from @BotFather (saved locally, git-ignored)
-python scripts/run_bot.py            # keep running so residents can use the commands
-```
-`demo_live.bat` starts the console, the bot and a demo camera together.
-
-## Opening the console from other devices
-| Command | Who can open it |
-|---|---|
-| `python scripts/run_console.py` | this laptop only (`http://127.0.0.1:8000`) |
-| `python scripts/run_console.py --lan` | devices on the same Wi-Fi (`http://<laptop-ip>:8000`) |
-| `python scripts/run_console.py --tunnel` | anyone with the link (`https://xxxx.trycloudflare.com`, free Cloudflare tunnel) |
-
-`--lan` and `--tunnel` require a password (asked the first time, stored hashed in `config/console.yaml`, git-ignored).
-Log in with any username, e.g. `guard`. Change it with `python scripts/run_console.py --set-password`.
-For `--tunnel`, install Cloudflare's tool once on Windows: `winget install --id Cloudflare.cloudflared`, then open a new terminal.
-`demo_public.bat` starts the public console, the bot and a demo camera together. The link changes every time it starts.
-
-## Prototype website (`web/`)
-A static page that replays **real SENTRA output** (annotated camera videos, alerts at their original times, 10-second clips) with an interactive guard console and a Telegram preview. It is hosted free on Vercel.
-
-```bash
-# 1. run SENTRA on each showcase camera
-for cam in gate porch door street lobby; do python scripts/run_sentra.py --camera $cam --config config/showcase.yaml; done
-# 2. export videos, clips and alerts into web/
-python scripts/export_showcase.py --config config/showcase.yaml
-# 3. preview locally
-cd web && python -m http.server 8090
-```
-Deploy: Vercel > Add New Project > import this repo > Root Directory `web` > Framework `Other` > Deploy.
-
-## Always-online Telegram demo (`web/api/telegram.js`)
-The resident bot [@SENTRA_Alerts_SDP_bot](https://t.me/SENTRA_Alerts_SDP_bot) runs as a Vercel function, so anyone can try the resident side of SENTRA without the on-site system running.
-It replies to `/start`, `/register`, `/away_on`, `/away_off`, `/status` and `/demo_alert`. After `/away_on`, the **Simulate an intruder** button sends a verified alert with a real SENTRA Away Mode clip.
-It does not store any data. Every user gets the same demo house (House 12).
-
-Setup (one time):
-1. Vercel > Settings > Environment Variables: add `TELEGRAM_BOT_TOKEN` (the bot token from @BotFather) and `TELEGRAM_SECRET` (any random word), then redeploy
-2. Open `https://<your-site>/api/telegram?setup=<TELEGRAM_SECRET>` once in a browser
-
-The same bot is used by the on-site system (`scripts/run_bot.py`). Only one can receive messages at a time: starting `run_bot.py` pauses the online demo, and opening the setup link again turns it back on.
-
-## Privacy
-- SENTRA does not use facial recognition. It only detects the class "person" or "vehicle" and tracks movement.
-- Clips are only shown to the guard on duty, and only guard-confirmed alerts reach residents.
-- Bot tokens and the console password are stored locally or in Vercel settings, and are never committed to this repo.
-
-## Data
-- Demo scenes are recorded by our team acting out scenarios (synthetic data).
-- Free stock clips from Mixkit, Pexels and Pixabay are used under their free licences.
-- Public research datasets (UCF-Crime, VIRAT) are used for testing only. They are not redistributed in this repo.
-- The showcase in `web/` uses short, publicly available CCTV clips from online news reports and CCTV product demonstrations, processed by SENTRA to demonstrate detection. All rights remain with their owners; source videos are not stored in this repo.
-- No data from real township residents is used.
-
-## Disclaimer
-SENTRA is a student hackathon prototype by Team Codex. It is not an official Sime Darby Property product.
+## Third-party components
+OpenCV 5 (Apache-2.0) · YOLOv8n weights by Ultralytics (AGPL-3.0) · YuNet face detector from OpenCV Zoo (MIT) ·
+FastAPI, Uvicorn, boto3, NumPy (permissive licences) · Caddy (Apache-2.0).
+SENTRA is a student prototype and not an official product of any company.

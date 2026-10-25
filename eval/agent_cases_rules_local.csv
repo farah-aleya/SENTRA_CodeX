@@ -1,0 +1,25 @@
+mode,id,camera,rule,video_time,label,sent_to_guard,status,decided_by,agent_ms,tool_calls,rechecks,enhanced_recheck,guardrail,summary
+rules,6ccdd475,door,LOITERING,6.1,real,True,PENDING,rules,,0,0,False,False,Person loitering at House 15 for 6s
+rules,dc31e2c0,fence,PERIMETER_BREACH,0.5,real,True,PENDING,rules,,0,0,False,False,Person entered restricted area 'Back yard No. 20'
+rules,6e072ebb,gate,LOITERING,13.7,real,True,PENDING,rules,,0,0,False,False,Person loitering at Front of No. 8 for 6s
+rules,b9eec572,gate,PERIMETER_BREACH,40.2,real,True,PENDING,rules,,0,0,False,False,Person entered restricted area 'Gate No. 8'
+rules,d94f95d7,gate,LOITERING,41.6,real,True,PENDING,rules,,0,0,False,False,Person loitering at Front of No. 8 for 6s
+rules,f7b5ccba,gateclimb,PERIMETER_BREACH,1.0,real,True,PENDING,rules,,0,0,False,False,Person entered restricted area 'Gate No. 22'
+rules,938d37da,gateclimb,PERIMETER_BREACH,22.3,real,True,PENDING,rules,,0,0,False,False,Person entered restricted area 'Gate No. 22'
+rules,6796acf4,porch,AWAY_BREACH,1.1,real,True,PENDING,rules,,0,0,False,False,"Person at House 12, which is in Away Mode"
+rules,cd05aca5,shops,LOITERING,10.2,benign,True,PENDING,rules,,0,0,False,False,Person loitering at Shop entrance for 6s
+rules,126d08a2,shops,LOITERING,11.8,benign,True,PENDING,rules,,0,0,False,False,Person loitering at Pavement for 6s
+rules,14f98818,shops,LOITERING,38.0,benign,True,PENDING,rules,,0,0,False,False,Person loitering at Shop entrance for 6s
+rules,8cd5ac6c,shops,LOITERING,64.6,benign,True,PENDING,rules,,0,0,False,False,Person loitering at Shop entrance for 6s
+local,2c341870,door,LOITERING,6.1,real,True,PENDING,local-policy,4126,0,2,True,False,"Person loitering at House 15 for 6s. Confirmed in 10/10 frames, moving."
+local,c19e35c6,fence,PERIMETER_BREACH,0.5,real,True,PENDING,local-policy,5198,0,2,True,False,"Person entered restricted area 'Back yard No. 20'. Confirmed in 9/12 frames, fast."
+local,ea7fcaaa,gate,LOITERING,13.7,real,True,PENDING,local-policy,2148,0,1,False,False,"Person loitering at Front of No. 8 for 6s. Confirmed in 10/10 frames, moving."
+local,f7f92e7c,gate,PERIMETER_BREACH,40.2,real,True,PENDING,local-policy,2027,0,1,False,False,"Person entered restricted area 'Gate No. 8'. Confirmed in 3/10 frames, moving."
+local,f3ea2f1f,gate,LOITERING,41.6,real,True,PENDING,local-policy,2071,0,1,False,False,"Person loitering at Front of No. 8 for 6s. Confirmed in 6/10 frames, moving."
+local,dcc09395,gateclimb,PERIMETER_BREACH,1.0,real,True,PENDING,local-policy,2092,0,1,False,False,"Person entered restricted area 'Gate No. 22'. Confirmed in 10/10 frames, fast."
+local,eab401f7,gateclimb,PERIMETER_BREACH,22.3,real,False,LOGGED,local-policy,2820,0,2,True,False,Re-check confirmed the person in only 1/11 frames.
+local,e2638002,porch,AWAY_BREACH,1.1,real,True,PENDING,local-policy,1920,0,1,False,False,"Person at House 12, which is in Away Mode. Confirmed in 4/10 frames, fast."
+local,c5185a0e,shops,LOITERING,10.2,benign,True,PENDING,local-policy,2037,0,1,False,False,"Person loitering at Shop entrance for 6s. Confirmed in 8/10 frames, moving."
+local,bcbb7e6a,shops,LOITERING,11.8,benign,True,PENDING,local-policy,1923,0,1,False,False,"Person loitering at Pavement for 6s. Confirmed in 10/10 frames, fast."
+local,4dc21e7b,shops,LOITERING,38.0,benign,True,PENDING,local-policy,1904,0,1,False,False,"Person loitering at Shop entrance for 6s. Confirmed in 10/10 frames, still."
+local,62a23bf4,shops,LOITERING,64.6,benign,True,PENDING,local-policy,2026,0,1,False,False,"Person loitering at Shop entrance for 6s. Confirmed in 10/10 frames, fast."
