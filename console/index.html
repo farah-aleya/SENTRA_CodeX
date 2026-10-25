@@ -748,6 +748,8 @@ $("reset").onclick = async () => {
 async function pollCams() {
   let cams = []; try { cams = await api("/api/cameras"); } catch (e) { return; }
   const el = $("cams");
+  const ids = new Set(cams.map((c) => c.camera_id));
+  el.querySelectorAll(".cam").forEach((t) => { if (!ids.has(t.dataset.cam)) t.remove(); });
   if (!cams.length) { el.innerHTML = `<div class="empty">No cameras running. Start one with scripts/run_sentra.py</div>`; return; }
   cams.forEach((c) => {
     let tile = el.querySelector(`[data-cam="${CSS.escape(c.camera_id)}"]`);
