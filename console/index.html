@@ -428,6 +428,7 @@
     <div class="spacer"></div>
     <button class="iconbtn" id="sound" title="Alert sound" aria-pressed="true">Sound on</button>
     <button class="iconbtn" id="bell" aria-label="Notifications">&#128276;<span class="count" id="bell-n" hidden>0</span></button>
+    <button class="iconbtn" id="reset" hidden title="Delete all alerts and camera tiles (accounts are kept)">Clear demo data</button>
     <button class="iconbtn" id="logout">Sign out</button>
   </header>
   <div class="bell-menu" id="bell-menu" hidden><h3>Notifications</h3><div id="bell-list" class="list" style="padding:10px"></div></div>
@@ -579,6 +580,7 @@ async function start() {
   events = new Map(list.map((e) => [e.id, e]));
   render();
   connect();
+  $("reset").hidden = me.role !== "guard";
   if (me.role === "guard") { pollCams(); setInterval(pollCams, 1000); pollStats(); setInterval(pollStats, 3000); }
   else renderAway();
   setInterval(render, 15000);   // refresh "x min ago"
@@ -736,6 +738,12 @@ document.addEventListener("keydown", (ev) => {
   if (!$("m-decide").hidden && (ev.key === "d" || ev.key === "D")) decide("dismiss");
 });
 
+$("reset").onclick = async () => {
+  const btn = $("reset");
+  if (btn.dataset.armed !== "1") { btn.dataset.armed = "1"; btn.textContent = "Click again to clear"; setTimeout(() => { btn.dataset.armed = ""; btn.textContent = "Clear demo data"; }, 4000); return; }
+  btn.dataset.armed = ""; btn.textContent = "Clear demo data";
+  await api("/api/reset", { method: "POST" }); events.clear(); unread = []; $("cams").innerHTML = ""; render(); pollStats(); pollCams();
+};
 /* ---------------- guard: cameras + stats ---------------- */
 async function pollCams() {
   let cams = []; try { cams = await api("/api/cameras"); } catch (e) { return; }

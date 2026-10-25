@@ -161,6 +161,10 @@ def events(limit: int = 200, user=Depends(current_user)):
 def cameras(user=Depends(guard_only)):
     out = []
     for c in store.list_cameras(db):
+        info = json.loads(c.get("info") or "{}")
+        age = time.time() - (c["updated"] or 0)
+        if info.get("ended") or age > 600:          # stopped on purpose, or not seen for 10 min: hide the tile
+            continue
         c["frame_url"] = _media(c["frame"]) + f"?t={int((c['updated'] or 0) * 4)}" if c["frame"] else None
         c["stale"] = time.time() - (c["updated"] or 0) > 5     # no update for 5 s = feed stopped
         out.append(c)
