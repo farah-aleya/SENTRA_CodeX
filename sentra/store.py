@@ -4,12 +4,13 @@ Shared between the detector (writes cases and camera status), the agent (writes 
 decision) and the web app (accounts, guard decisions, Away Mode). One small file, no server.
 """
 import json
+import os
 import sqlite3
 import time
 import uuid
 from pathlib import Path
 
-DB_PATH = Path("outputs/sentra.db")
+DB_PATH = Path(os.environ.get("SENTRA_DB", "outputs/sentra.db"))   # SENTRA_DB lets evaluations use their own file
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS events (

@@ -10,3 +10,5 @@ config/console.yaml
 # third-party footage: local testing only, never pushed
 dataset/
 config/secret.key
+datasets/
+eval/run_*.db

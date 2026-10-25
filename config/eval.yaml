@@ -1,0 +1,61 @@
+# Evaluation set for scripts/eval_agent.py. Same rule thresholds as the showcase.
+# Ground truth for every case is in eval/labels.yaml.
+rules:
+  active_hours: always
+  breach_seconds: 0.5
+  away_seconds: 1.0
+  loiter_seconds: 6
+  vehicle_seconds: 20
+  grace_seconds: 5.0
+  cooldown_seconds: 20
+health:
+  offline_seconds: 5
+  frozen_seconds: 5
+  blocked_seconds: 1.5
+  baseline_seconds: 3
+away_mode: ["12"]
+cameras:
+  gate:
+    name: CAM 01 Main Gate (night IR)
+    source: samples/gate_night.mp4
+    conf: 0.15
+    imgsz: 960
+    zones:
+      - {id: gate_8, type: restricted, house: "8", name: Gate No. 8, polygon: [[0.58, 0.05], [0.80, 0.05], [0.80, 0.40], [0.58, 0.40]]}
+      - {id: house_8, type: house, house: "8", name: Front of No. 8, polygon: [[0.45, 0.40], [0.80, 0.40], [0.80, 0.58], [0.45, 0.58]]}
+  porch:
+    name: CAM 02 Porch, House 12
+    source: samples/porch_day.mp4
+    zones:
+      - {id: house_12, type: house, house: "12", polygon: [[0.0, 0.35], [0.62, 0.35], [0.62, 1.0], [0.0, 1.0]]}
+  door:
+    name: CAM 03 Front Door, House 15 (night)
+    source: samples/door_night.mp4
+    zones:
+      - {id: house_15, type: house, house: "15", polygon: [[0.10, 0.62], [0.78, 0.62], [0.78, 0.95], [0.10, 0.95]]}
+  street:
+    name: CAM 04 Jalan Melati
+    source: samples/street_walk.mp4
+    zones:
+      - {id: house_14, type: house, house: "14", name: Garden No. 14, polygon: [[0.0, 0.82], [1.0, 0.82], [1.0, 1.0], [0.0, 1.0]]}
+  fence:
+    name: CAM 06 Back Fence, House 20
+    source: samples/fence_climb.mp4
+    zones:
+      - {id: yard_20, type: restricted, house: "20", name: Back yard No. 20, polygon: [[0.0, 0.40], [0.85, 0.40], [0.85, 0.76], [0.0, 0.76]]}
+  gateclimb:
+    name: CAM 07 Gate, House 22
+    source: samples/gate_climb.mp4
+    zones:
+      - {id: gate_22, type: restricted, house: "22", name: Gate No. 22, polygon: [[0.20, 0.18], [0.52, 0.18], [0.52, 0.64], [0.20, 0.64]]}
+  shops:
+    name: CAM 08 Shop Row (rain)
+    source: samples/rainy_street.mp4
+    zones:
+      - {id: shop_1, type: house, house: "", name: Shop entrance, polygon: [[0.62, 0.35], [0.97, 0.35], [0.97, 1.0], [0.62, 1.0]]}
+      - {id: walk_1, type: house, house: "", name: Pavement, polygon: [[0.0, 0.45], [0.55, 0.45], [0.55, 1.0], [0.0, 1.0]]}
+  visitor:
+    name: CAM 09 Porch, House 30
+    source: samples/porch_visitor.mp4
+    zones:
+      - {id: house_30, type: house, house: "30", polygon: [[0.20, 0.40], [0.80, 0.40], [0.80, 1.0], [0.20, 1.0]]}

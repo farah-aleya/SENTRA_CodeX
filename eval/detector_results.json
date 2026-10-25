@@ -1,0 +1,102 @@
+{
+  "machine": {
+    "cpu": "x86_64",
+    "cores": 2,
+    "os": "Linux-6.18.44-fc-v153-x86_64-with-glibc2.39",
+    "opencv": "5.0.0",
+    "torch": "2.14.1+cu130"
+  },
+  "speed_cctv_frames": {
+    "opencv5_dnn": {
+      "frames": 50,
+      "median_ms": 103.1,
+      "p90_ms": 117.6,
+      "fps": 9.7
+    },
+    "pytorch": {
+      "frames": 50,
+      "median_ms": 77.7,
+      "p90_ms": 108.2,
+      "fps": 12.9
+    },
+    "note": "end-to-end detect() per frame incl. pre/post-processing, CPU only, runtimes measured separately"
+  },
+  "labelled_images": {
+    "opencv5_dnn": {
+      "person": {
+        "AP50": 0.768,
+        "precision@0.35": 0.915,
+        "recall@0.35": 0.594,
+        "ground_truth_objects": 254
+      },
+      "vehicle": {
+        "AP50": 0.396,
+        "precision@0.35": 0.87,
+        "recall@0.35": 0.286,
+        "ground_truth_objects": 70
+      },
+      "images": 128
+    },
+    "pytorch": {
+      "person": {
+        "AP50": 0.766,
+        "precision@0.35": 0.886,
+        "recall@0.35": 0.583,
+        "ground_truth_objects": 254
+      },
+      "vehicle": {
+        "AP50": 0.391,
+        "precision@0.35": 0.955,
+        "recall@0.35": 0.3,
+        "ground_truth_objects": 70
+      },
+      "images": 128
+    }
+  },
+  "cctv_agreement": {
+    "frames": 150,
+    "boxes_opencv5": 234,
+    "boxes_pytorch": 225,
+    "matched": 213,
+    "agreement_f1": 0.928,
+    "mean_iou_matched": 0.98,
+    "mean_abs_conf_diff": 0.026
+  },
+  "cctv_per_video": [
+    {
+      "video": "door_night.mp4",
+      "frames": 30,
+      "opencv5_boxes": 22,
+      "pytorch_boxes": 23,
+      "agreement_f1": 0.933
+    },
+    {
+      "video": "gate_night.mp4",
+      "frames": 30,
+      "opencv5_boxes": 9,
+      "pytorch_boxes": 8,
+      "agreement_f1": 0.941
+    },
+    {
+      "video": "lobby_tamper.mp4",
+      "frames": 30,
+      "opencv5_boxes": 12,
+      "pytorch_boxes": 12,
+      "agreement_f1": 0.917
+    },
+    {
+      "video": "porch_day.mp4",
+      "frames": 30,
+      "opencv5_boxes": 51,
+      "pytorch_boxes": 51,
+      "agreement_f1": 1.0
+    },
+    {
+      "video": "street_walk.mp4",
+      "frames": 30,
+      "opencv5_boxes": 140,
+      "pytorch_boxes": 131,
+      "agreement_f1": 0.9
+    }
+  ]
+}

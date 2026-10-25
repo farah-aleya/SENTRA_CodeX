@@ -1,0 +1,11 @@
+# Ground truth for config/eval.yaml, labelled by Team Codex after watching each clip.
+# real   = a guard should look at this (intrusion, climbing, Away Mode breach, suspicious waiting at night)
+# benign = normal activity a guard should NOT be disturbed by
+gate:      {LOITERING: real, PERIMETER_BREACH: real}     # person waits at the gate at night, then climbs it
+porch:     {AWAY_BREACH: real}                           # person at a house that is in Away Mode
+door:      {LOITERING: real}                             # person standing at a front door at night
+street:    {LOITERING: benign}                           # passer-by on the pavement
+fence:     {PERIMETER_BREACH: real}                      # man climbs over a back fence
+gateclimb: {PERIMETER_BREACH: real}                      # woman climbs over a front gate
+shops:     {LOITERING: benign}                           # shoppers and pedestrians in the rain, daytime
+visitor:   {LOITERING: benign}                           # visitor walks to the porch and leaves, daytime

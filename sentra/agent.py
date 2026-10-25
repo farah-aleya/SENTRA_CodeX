@@ -57,7 +57,8 @@ How to work:
    the video with OpenCV. Call get_track_history and get_zone_context when they could change your decision.
    If the first re-check is weak (low_light is true, low confidence, or few frames confirmed), call
    recheck_region again with enhance=true and window_seconds=3.
-2. Then take exactly one action: request_human_approval or log_only.
+2. For recorded video the clock time is unknown: treat low_light or night_infrared from recheck_region as night.
+3. Then take exactly one action: request_human_approval or log_only.
 
 Guidance:
 - Perimeter breach and Away Mode breach are serious. Only log them if the re-check shows there is no real person.
@@ -156,7 +157,7 @@ class Tools:
         last_box = c.event.get("_box")
         clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
         checked = confirmed = 0
-        confs, flows, prev_gray, light = [], [], None, []
+        confs, flows, prev_gray, light, sat = [], [], None, [], []
         foot_start = foot_end = None
         want = "person" if c.event.get("label") == "person" else None
         for frame, boxes in sample:
@@ -167,6 +168,9 @@ class Tools:
             x1, y1, x2, y2 = _expand(last_box, c.w, c.h)
             crop = frame[y1:y2, x1:x2]
             light.append(float(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).mean()))
+            fh, fw = frame.shape[:2]                          # colourfulness of the centre: ~0 on an infrared night camera
+            cen = frame[fh // 6: fh - fh // 6, fw // 6: fw - fw // 6].astype(np.int16)
+            sat.append(float((np.abs(cen[:, :, 0] - cen[:, :, 1]) + np.abs(cen[:, :, 1] - cen[:, :, 2])).mean()))
             if crop.size == 0:
                 continue
             s = 640 / max(crop.shape[:2])
@@ -209,6 +213,7 @@ class Tools:
             "moved_fraction_of_frame": round(moved, 3),
             "moving_toward_zone": toward,
             "low_light": bool(light and np.mean(light) < 70),
+            "night_infrared": bool(sat and np.mean(sat) < 10),
             "enhanced": bool(enhance),
             "window_seconds": window_seconds,
         }
@@ -248,7 +253,7 @@ class Tools:
             "local_hour": hour if live else None,
             "is_night": (hour >= 19 or hour < 7) if live else None,
             "time_note": "live camera, clock time is real" if live else
-                         "recorded video: the clock time is unknown, use low_light from recheck_region instead",
+                         "recorded video: the clock time is unknown, use low_light / night_infrared from recheck_region instead",
             "past_24h_alerts_here": {r["status"]: r["n"] for r in rows},
         }
 
