@@ -1,8 +1,9 @@
-ultralytics>=8.3
-opencv-python>=4.9
-lap>=0.5
+opencv-python==5.0.0.93
 numpy
+lap>=0.5
 pyyaml
 fastapi>=0.110
 uvicorn>=0.29
 imageio-ffmpeg>=0.5
+# Only needed once, to make models/yolov8n.onnx (scripts/export_onnx.py) and for the test-video helpers:
+#   pip install ultralytics onnx
