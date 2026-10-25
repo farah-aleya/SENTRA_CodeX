@@ -1,7 +1,7 @@
 """SENTRA event store (SQLite).
 
-Shared between the detector (writes alerts and camera status) and the guard
-console (reads alerts, sets CONFIRMED / DISMISSED). One small file, no server.
+Shared between the detector (writes cases and camera status), the agent (writes its
+decision) and the web app (accounts, guard decisions, Away Mode). One small file, no server.
 """
 import json
 import sqlite3
@@ -23,8 +23,10 @@ CREATE TABLE IF NOT EXISTS events (
     handled_at TEXT, guard_note TEXT, notified INTEGER DEFAULT 0,
     house TEXT DEFAULT ''
 );
-CREATE TABLE IF NOT EXISTS residents (
-    chat_id INTEGER PRIMARY KEY, house TEXT, name TEXT, registered TEXT
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL, name TEXT, role TEXT NOT NULL, house TEXT DEFAULT '',
+    pw_salt TEXT NOT NULL, pw_hash TEXT NOT NULL, created TEXT
 );
 CREATE TABLE IF NOT EXISTS away_mode (
     house TEXT PRIMARY KEY, since TEXT, until TEXT, set_by TEXT
@@ -51,9 +53,11 @@ def connect(path=DB_PATH) -> sqlite3.Connection:
     cols = {r[1] for r in con.execute("PRAGMA table_info(events)")}
     if "house" not in cols:                       # upgrade a Step 4 database
         con.execute("ALTER TABLE events ADD COLUMN house TEXT DEFAULT ''"); con.commit()
-    for col in AGENT_COLS:                        # upgrade for the agent (OpenCV competition)
+    for col in AGENT_COLS + ["handled_by"]:       # upgrade for the agent (OpenCV competition)
         if col not in cols:
             con.execute(f"ALTER TABLE events ADD COLUMN {col} TEXT DEFAULT ''")
+    if "updated" not in cols:                     # last change time, used by the live stream
+        con.execute("ALTER TABLE events ADD COLUMN updated REAL DEFAULT 0")
     con.commit()
     return con
 
@@ -62,8 +66,10 @@ def add_event(con, ev: dict) -> str:
     eid = uuid.uuid4().hex[:8]
     cols = ["rule", "severity", "title", "message", "camera_id", "camera_name", "zone_id", "zone_name",
             "track_id", "label", "video_time", "wall_time", "snapshot", "clip", "house", "status"]
-    con.execute(f"INSERT INTO events (id, created, {', '.join(cols)}) VALUES (?, ?, {', '.join('?' * len(cols))})",
-                [eid, time.time(), *[ev.get(c) for c in cols]])
+    now = time.time()
+    con.execute(f"INSERT INTO events (id, created, updated, {', '.join(cols)}) "
+                f"VALUES (?, ?, ?, {', '.join('?' * len(cols))})",
+                [eid, now, now, *[ev.get(c) for c in cols]])
     con.commit()
     return eid
 
@@ -72,26 +78,31 @@ def set_agent(con, eid: str, d: dict):
     """Save the agent decision and move the event to PENDING (needs a human) or LOGGED."""
     status = "PENDING" if d.get("action") == "REQUEST_APPROVAL" else "LOGGED"
     con.execute("UPDATE events SET status=?, agent_action=?, agent_priority=?, agent_summary=?, agent_decided_by=?, "
-                "agent_model=?, agent_ms=?, agent_trace=? WHERE id=? AND status='REVIEWING'",
+                "agent_model=?, agent_ms=?, agent_trace=?, updated=? WHERE id=? AND status='REVIEWING'",
                 (status, d.get("action", ""), d.get("priority", ""), d.get("summary", ""), d.get("decided_by", ""),
-                 d.get("model") or "", str(d.get("ms", "")), json.dumps(d.get("trace", []), default=str), eid))
+                 d.get("model") or "", str(d.get("ms", "")), json.dumps(d.get("trace", []), default=str),
+                 time.time(), eid))
     con.commit()
     return status
 
 
 def set_clip(con, eid: str, clip: str):
-    con.execute("UPDATE events SET clip=? WHERE id=?", (clip, eid))
+    con.execute("UPDATE events SET clip=?, updated=? WHERE id=?", (clip, time.time(), eid))
     con.commit()
 
 
-def set_status(con, eid: str, status: str, note: str = ""):
-    con.execute("UPDATE events SET status=?, handled_at=?, guard_note=? WHERE id=?",
-                (status, time.strftime("%Y-%m-%d %H:%M:%S"), note, eid))
+def set_status(con, eid: str, status: str, note: str = "", by: str = ""):
+    con.execute("UPDATE events SET status=?, handled_at=?, guard_note=?, handled_by=?, updated=? WHERE id=?",
+                (status, time.strftime("%Y-%m-%d %H:%M:%S"), note, by, time.time(), eid))
     con.commit()
 
 
 def list_events(con, limit=100):
     return [dict(r) for r in con.execute("SELECT * FROM events ORDER BY created DESC LIMIT ?", (limit,))]
+
+
+def events_updated_since(con, ts: float, limit=200):
+    return [dict(r) for r in con.execute("SELECT * FROM events WHERE updated>? ORDER BY updated LIMIT ?", (ts, limit))]
 
 
 def get_event(con, eid):
@@ -111,29 +122,36 @@ def list_cameras(con):
     return [dict(r) for r in con.execute("SELECT * FROM cameras ORDER BY camera_id")]
 
 
-# ---------------- residents and Away Mode (Step 5) ----------------
-def register_resident(con, chat_id: int, house: str, name: str):
-    con.execute("INSERT INTO residents (chat_id, house, name, registered) VALUES (?, ?, ?, ?) "
-                "ON CONFLICT(chat_id) DO UPDATE SET house=excluded.house, name=excluded.name",
-                (chat_id, str(house), name, time.strftime("%Y-%m-%d %H:%M:%S")))
+# ---------------- accounts (web app) ----------------
+def add_user(con, username, name, role, house, pw_salt, pw_hash):
+    cur = con.execute("INSERT INTO users (username, name, role, house, pw_salt, pw_hash, created) "
+                      "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                      (username.lower(), name, role, str(house or ""), pw_salt, pw_hash,
+                       time.strftime("%Y-%m-%d %H:%M:%S")))
     con.commit()
+    return cur.lastrowid
 
 
-def unregister_resident(con, chat_id: int):
-    con.execute("DELETE FROM residents WHERE chat_id=?", (chat_id,)); con.commit()
-
-
-def resident(con, chat_id: int):
-    r = con.execute("SELECT * FROM residents WHERE chat_id=?", (chat_id,)).fetchone()
+def user_by_name(con, username):
+    r = con.execute("SELECT * FROM users WHERE username=?", ((username or "").lower(),)).fetchone()
     return dict(r) if r else None
 
 
-def residents(con, house=None):
-    if house is None:
-        return [dict(r) for r in con.execute("SELECT * FROM residents")]
-    return [dict(r) for r in con.execute("SELECT * FROM residents WHERE house=?", (str(house),))]
+def user_by_id(con, uid):
+    r = con.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+    return dict(r) if r else None
 
 
+def count_users(con, role=None, house=None):
+    q, args = "SELECT COUNT(*) FROM users WHERE 1=1", []
+    if role:
+        q += " AND role=?"; args.append(role)
+    if house is not None:
+        q += " AND house=?"; args.append(str(house))
+    return con.execute(q, args).fetchone()[0]
+
+
+# ---------------- Away Mode ----------------
 def set_away(con, house: str, on: bool, until: str = "", set_by: str = ""):
     if on:
         con.execute("INSERT INTO away_mode (house, since, until, set_by) VALUES (?, ?, ?, ?) "

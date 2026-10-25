@@ -3,267 +3,781 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SENTRA Guard Console</title>
+<title>SENTRA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0d1524; --panel: #152038; --panel-2: #1b2945; --line: #263656;
-    --text: #e8edf5; --muted: #8e9bb3; --red: #e0283a; --orange: #f58220;
-    --green: #3fb66b; --grey: #5d6b85; --radius: 12px;
+    --bg: #f6f7fc; --panel: #ffffff; --panel-2: #f8f8fd; --field: #ffffff; --line: #e8e7f3; --line-2: #d9d7ea;
+    --ink: #241a5e; --text: #2a2745; --muted: #6a6787; --faint: #a19eb9;
+    --brand: #6c4cf1; --brand-2: #9a6bff; --brand-bg: #f0ecff; --brand-ink: #4b2fc4;
+    --cta: #2cc4d6; --cta-ink: #14104a; --cta-bg: #e2f8fb;
+    --pink: #ff6f91; --pink-bg: #ffe9ef; --mint: #3ddbb0; --mint-bg: #e6faf3;
+    --red: #e11d48; --red-bg: #ffe4ea; --red-ink: #be123c;
+    --amber: #f59e0b; --amber-bg: #fff4d6; --amber-ink: #b45309;
+    --green: #10b981; --green-bg: #dcfce9; --green-ink: #047857;
+    --blue: #0ea5e9; --blue-bg: #e0f4ff; --blue-ink: #0369a1;
+    --radius: 16px; --shadow-sm: 0 1px 2px rgba(36, 26, 94, .05), 0 2px 6px rgba(36, 26, 94, .04);
+    --shadow: 0 30px 70px rgba(36, 26, 94, .16);
+    --display: "Outfit", "Segoe UI", system-ui, sans-serif;
   }
   * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
   html, body { margin: 0; background: var(--bg); color: var(--text);
-    font: 14px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
-  button { font: inherit; cursor: pointer; }
-
-  header { display: flex; align-items: center; gap: 18px; padding: 12px 20px;
-    background: #0a1120; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-  .brand { display: flex; align-items: baseline; gap: 10px; }
-  .brand b { font-size: 22px; letter-spacing: .06em; color: #fff; }
-  .brand b span { color: var(--red); }
-  .brand small { color: var(--muted); font-size: 13px; }
-  .clock { color: var(--muted); font-variant-numeric: tabular-nums; }
-  .stats { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
-  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
-    padding: 5px 12px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
-  .stat b { color: var(--text); font-size: 14px; margin-left: 4px; }
-  .stat.pending b { color: var(--red); }
-  .iconbtn { background: var(--panel); border: 1px solid var(--line); color: var(--text);
-    border-radius: 999px; padding: 5px 12px; font-size: 12.5px; }
-
-  main { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(340px, 1fr); gap: 16px; padding: 16px 20px; }
-  @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
-  h2 { margin: 0 0 10px; font-size: 12px; letter-spacing: .12em; color: var(--orange); font-weight: 700; }
-
-  .cams { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
-  .cam { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-  .cam .view { position: relative; aspect-ratio: 16/9; background: #0a0f1a; display: grid; place-items: center; }
-  .cam img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .cam .nosig { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted);
-    font-weight: 700; letter-spacing: .1em; background: #0a0f1acc; }
+    font: 15px/1.6 "DM Sans", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+  h1, h2, h3, .logo, .kpi b, .house-no, .modal-head h3 { font-family: var(--display); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  a { color: inherit; text-decoration: none; }
   [hidden] { display: none !important; }
-  .cam .meta { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; gap: 8px; }
-  .cam .name { font-weight: 600; }
-  .badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; color: #fff; letter-spacing: .04em; }
-  .b-OK { background: var(--green); } .b-FROZEN, .b-NOSIGNAL, .b-MEDIUM { background: var(--orange); }
-  .b-BLOCKED, .b-OFFLINE, .b-HIGH { background: var(--red); } .b-LEARNING, .b-STARTING { background: var(--grey); }
-  .b-CONFIRMED { background: var(--red); } .b-DISMISSED { background: var(--grey); } .b-PENDING { background: var(--orange); }
-  .empty { color: var(--muted); padding: 28px; text-align: center; border: 1px dashed var(--line); border-radius: var(--radius); }
+  .muted { color: var(--muted); } .faint { color: var(--faint); }
+  :focus-visible { outline: 3px solid #cfc4ff; outline-offset: 2px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: .02em; font-size: 22px; color: var(--ink); }
+  .logo i { width: 30px; height: 30px; border-radius: 10px; background: conic-gradient(from 210deg, var(--brand), var(--cta), var(--pink), var(--brand));
+    position: relative; flex: none; }
+  .logo i::after { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: #fff; }
 
-  .detail { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
-  .detail video, .detail img { width: 100%; aspect-ratio: 16/9; background: #000; display: block; object-fit: contain; }
-  .detail .body { padding: 12px 14px 14px; }
-  .detail .title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; }
-  .detail .msg { margin: 6px 0 4px; }
-  .detail .sub { color: var(--muted); font-size: 12.5px; }
-  .detail .note { width: 100%; margin: 10px 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line);
-    background: var(--panel-2); color: var(--text); font: inherit; }
-  .actions { display: flex; gap: 10px; }
-  .actions button { flex: 1; border: 0; border-radius: 10px; padding: 11px; font-weight: 700; font-size: 15px; }
-  .confirm { background: var(--red); color: #fff; }
-  .dismiss { background: var(--panel-2); color: var(--text); border: 1px solid var(--line) !important; }
-  .handled { padding: 10px 12px; border-radius: 10px; background: var(--panel-2); color: var(--muted); }
-  .rec { color: var(--orange); font-size: 12px; padding: 6px 14px 0; }
+  /* ---------- landing ---------- */
+  .landing { background: #fff; overflow-x: hidden; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 28px; }
+  .nav { display: flex; align-items: center; gap: 30px; padding: 20px 0; position: relative; z-index: 3; }
+  .nav .links { display: flex; gap: 26px; font-weight: 600; font-size: 14px; color: var(--ink); }
+  .nav .links a:hover { color: var(--brand); }
+  .nav .right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  .pill { border-radius: 999px; padding: 10px 22px; font-weight: 700; border: 0; font-size: 14.5px; }
+  .pill.cta { background: var(--cta); color: var(--cta-ink); box-shadow: 0 10px 24px rgba(44, 196, 214, .35); }
+  .pill.cta:hover { filter: brightness(1.05); transform: translateY(-1px); }
+  .pill.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line-2); }
+  .pill.ghost:hover { border-color: var(--ink); }
+  .pill.lg { padding: 14px 30px; font-size: 16px; }
+  @media (max-width: 760px) { .nav .links { display: none; } }
+  .pill { white-space: nowrap; }
+  @media (max-width: 520px) { .nav { gap: 12px; } .nav .right .pill { padding: 8px 14px; font-size: 13px; } .nav .logo { font-size: 18px; } }
 
-  .queue { display: flex; flex-direction: column; gap: 8px; max-height: 46vh; overflow: auto; padding-right: 2px; }
-  .item { display: grid; grid-template-columns: 92px 1fr; gap: 10px; background: var(--panel); border: 1px solid var(--line);
-    border-radius: 10px; padding: 8px; text-align: left; color: inherit; width: 100%; }
-  .item.sel { outline: 2px solid var(--orange); }
-  .item img { width: 92px; height: 52px; object-fit: cover; border-radius: 6px; background: #000; }
-  .item .t { font-weight: 600; display: flex; gap: 6px; align-items: center; }
-  .item .s { color: var(--muted); font-size: 12px; }
+  .hero-sec { display: grid; grid-template-columns: 1.02fr 1fr; gap: 30px; align-items: center; min-height: 600px; position: relative; }
+  .hero-sec h1 { font-size: clamp(38px, 5.2vw, 62px); line-height: 1.06; letter-spacing: -.025em; color: var(--ink); margin: 14px 0 18px; font-weight: 700; }
+  .hero-sec h1 em { font-style: normal; background: linear-gradient(90deg, var(--brand), var(--cta)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--brand-ink);
+    background: var(--brand-bg); padding: 6px 14px; border-radius: 999px; }
+  .eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 3px #c9f6e8; }
+  .lead { font-size: 17px; color: var(--muted); max-width: 520px; margin: 0 0 28px; }
+  .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+  .trust { margin-top: 38px; }
+  .trust small { color: var(--faint); font-weight: 600; }
+  .trust div { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 10px; font-family: var(--display); font-weight: 700; font-size: 17px; color: #b6b3cb; }
+  .art { position: relative; height: 560px; }
+  .art .shape { position: absolute; inset: -40px -200px -30px 40px; border-radius: 60px 0 0 60px;
+    background: radial-gradient(500px 340px at 30% 30%, #d9fbef 0%, transparent 70%), radial-gradient(400px 400px at 80% 70%, #e6defe 0%, transparent 70%),
+                linear-gradient(135deg, #eafaff, #f2edff);
+    clip-path: polygon(22% 0, 100% 0, 100% 100%, 0 100%); }
+  .art .tri { position: absolute; width: 0; height: 0; border-left: 70px solid transparent; border-right: 70px solid transparent;
+    border-bottom: 120px solid #ffd6e1; right: 30px; bottom: -10px; transform: rotate(18deg); opacity: .9; }
+  .screen { position: absolute; left: 70px; top: 70px; width: 440px; border-radius: 22px; overflow: hidden; background: #141133;
+    box-shadow: var(--shadow); border: 6px solid #fff; }
+  .screen svg { display: block; width: 100%; height: auto; }
+  .float { position: absolute; background: #fff; border-radius: 16px; box-shadow: 0 18px 40px rgba(36, 26, 94, .16); padding: 14px 16px; }
+  .float.alert { width: 300px; right: -10px; top: 300px; }
+  .float.alert .t { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--ink); font-family: var(--display); }
+  .float.alert p { margin: 6px 0 10px; font-size: 13px; color: var(--muted); }
+  .float.alert .b { display: flex; gap: 8px; }
+  .float.alert .b span { flex: 1; text-align: center; font-size: 12.5px; font-weight: 700; padding: 7px; border-radius: 10px; }
+  .float.chip1 { left: 10px; top: 20px; display: flex; gap: 10px; align-items: center; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .float.chip2 { left: 30px; bottom: 30px; display: flex; gap: 10px; align-items: center; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .dot { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; flex: none; }
+  .dot svg { width: 17px; height: 17px; }
+  @media (max-width: 960px) { .hero-sec { grid-template-columns: 1fr; } .art { height: 520px; } .art .shape { inset: 0 -40px 0 -40px; clip-path: none; border-radius: 30px; }
+    .screen { left: 20px; width: calc(100% - 40px); max-width: 440px; } .float.alert { right: 10px; } }
+  .down { display: grid; place-items: center; margin: 10px auto 0; width: 42px; height: 42px; border-radius: 50%; background: var(--cta); color: var(--cta-ink);
+    box-shadow: 0 8px 20px rgba(44, 196, 214, .35); }
 
-  section.history { padding: 0 20px 24px; }
-  table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: var(--radius); overflow: hidden; }
-  th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); font-size: 13px; }
-  th { color: var(--muted); font-weight: 600; background: var(--panel-2); }
-  footer { color: var(--muted); font-size: 12px; padding: 0 20px 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-  footer button { background: none; border: 0; color: var(--muted); text-decoration: underline; }
-  kbd { background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: 11px; }
+  .sec { padding: 90px 0 40px; position: relative; }
+  .sec-title { text-align: center; max-width: 640px; margin: 0 auto 44px; position: relative; z-index: 1; }
+  .sec-title h2 { font-size: clamp(26px, 3.2vw, 36px); line-height: 1.2; color: var(--ink); margin: 0 0 12px; font-weight: 700; letter-spacing: -.01em; }
+  .sec-title p { color: var(--muted); margin: 0; font-size: 16px; }
+  .kicker { color: var(--brand); font-weight: 700; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; display: block; margin-bottom: 8px; }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); background: #fff; border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow-sm); position: relative; z-index: 1; }
+  .step { padding: 30px 24px; text-align: center; }
+  .step + .step { border-left: 1px solid var(--line); }
+  .step .ic { width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 20px; display: grid; place-items: center; }
+  .step .ic svg { width: 30px; height: 30px; }
+  .step .n { font-size: 12px; font-weight: 700; color: var(--faint); letter-spacing: .1em; }
+  .step h3 { font-size: 17px; color: var(--ink); margin: 4px 0 6px; }
+  .step p { margin: 0; font-size: 14px; color: var(--muted); }
+  @media (max-width: 900px) { .steps { grid-template-columns: 1fr 1fr; } .step:nth-child(3) { border-left: 0; } .step:nth-child(n+3) { border-top: 1px solid var(--line); } }
+  @media (max-width: 520px) { .steps { grid-template-columns: 1fr; } .step + .step { border-left: 0; border-top: 1px solid var(--line); } }
+  .pinktri { position: absolute; right: 1%; top: 250px; z-index: 0; width: 200px; height: 180px; background: #ffe2ea; clip-path: polygon(0 0, 100% 0, 60% 100%); border-radius: 20px; }
+
+  .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .feat { border-radius: 24px; padding: 30px; display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: start; }
+  .feat h3 { margin: 0 0 8px; font-size: 21px; color: var(--ink); }
+  .feat p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .feat .big { width: 56px; height: 56px; border-radius: 18px; background: #fff; display: grid; place-items: center; box-shadow: var(--shadow-sm); }
+  .feat .big svg { width: 28px; height: 28px; }
+  .f1 { background: var(--brand-bg); } .f2 { background: var(--mint-bg); } .f3 { background: var(--pink-bg); } .f4 { background: var(--cta-bg); }
+  .feat ul { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 14px; color: var(--text); }
+  .feat li::before { content: "✓"; color: var(--brand); font-weight: 800; margin-right: 8px; }
+  @media (max-width: 820px) { .features { grid-template-columns: 1fr; } }
+
+  .numbers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: center; }
+  .numbers b { display: block; font-family: var(--display); font-size: 48px; font-weight: 800; color: var(--ink); line-height: 1.1;
+    background: linear-gradient(90deg, var(--brand), var(--cta)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .numbers span { color: var(--muted); font-size: 14.5px; }
+  @media (max-width: 700px) { .numbers { grid-template-columns: 1fr; } }
+  .cta-band { margin: 70px 0 0; border-radius: 30px; padding: 46px; display: flex; gap: 24px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+    background: radial-gradient(500px 260px at 0% 0%, rgba(61, 219, 176, .35), transparent 70%), radial-gradient(500px 300px at 100% 100%, rgba(255, 111, 145, .3), transparent 70%), var(--ink); color: #fff; }
+  .cta-band h2 { margin: 0 0 6px; font-size: 30px; font-family: var(--display); color: #fff; display: block; }
+  .cta-band p { margin: 0; color: #cfcaf0; }
+  footer.site { padding: 40px 0 50px; color: var(--faint); font-size: 13px; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+
+  /* ---------- auth modal ---------- */
+  .auth { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: rgba(36, 26, 94, .38); backdrop-filter: blur(4px); }
+  .auth-card { position: relative; width: min(440px, 100%); max-height: calc(100vh - 40px); overflow: auto; background: var(--panel);
+    border-radius: 26px; padding: 30px; box-shadow: var(--shadow); }
+  .auth-card .closex { position: absolute; right: 16px; top: 16px; }
+  .tagline { margin: 6px 0 20px; color: var(--muted); }
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 999px; padding: 4px; margin-bottom: 16px; }
+  .tabs button { border: 0; background: none; padding: 9px; border-radius: 999px; color: var(--muted); font-weight: 700; }
+  .tabs button[aria-selected="true"] { background: var(--ink); color: #fff; }
+  label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 12px 0 5px; }
+  input[type=text], input[type=password], select, textarea {
+    width: 100%; padding: 11px 14px; background: var(--field); border: 1.5px solid var(--line-2); border-radius: 12px; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px var(--brand-bg); }
+  .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .roles label { margin: 0; display: flex; gap: 8px; align-items: flex-start; padding: 11px 12px; border: 1.5px solid var(--line-2);
+    border-radius: 14px; cursor: pointer; color: var(--ink); font-size: 14px; font-weight: 700; }
+  .roles label:has(input:checked) { border-color: var(--brand); background: var(--brand-bg); }
+  .roles input { accent-color: var(--brand); }
+  .roles small { display: block; color: var(--muted); font-size: 12px; font-weight: 400; }
+  .btn { border: 1.5px solid var(--line-2); background: var(--panel); padding: 9px 16px; border-radius: 12px; font-weight: 700; }
+  .btn:hover { border-color: var(--faint); background: var(--panel-2); }
+  .btn.primary { background: var(--cta); border-color: var(--cta); color: var(--cta-ink); }
+  .btn.primary:hover { filter: brightness(1.05); background: var(--cta); }
+  .btn.danger { background: var(--red); border-color: var(--red); color: #fff; }
+  .btn.danger:hover { filter: brightness(1.06); background: var(--red); }
+  .btn.block { width: 100%; margin-top: 20px; padding: 13px; border-radius: 999px; }
+  .err { color: var(--red-ink); font-size: 13px; min-height: 20px; margin-top: 10px; }
+  .privacy-note { margin-top: 14px; font-size: 12.5px; color: var(--faint); }
+
+  /* ---------- shell ---------- */
+  header { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 14px; padding: 10px 22px;
+    background: rgba(255, 255, 255, .9); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  header .logo { font-size: 19px; } header .logo i { width: 26px; height: 26px; } header .logo i::after { inset: 8px; }
+  .chip { font-size: 12.5px; font-weight: 700; padding: 5px 12px; border-radius: 999px; background: var(--brand-bg); color: var(--brand-ink); }
+  .live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-weight: 600; }
+  .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+  .live.on i { background: var(--green); box-shadow: 0 0 0 3px var(--green-bg); }
+  .spacer { flex: 1; }
+  .iconbtn { position: relative; border: 1.5px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 14px; font-weight: 700; color: var(--muted); }
+  .iconbtn:hover { color: var(--text); border-color: var(--line-2); }
+  .iconbtn .count { position: absolute; top: -7px; right: -7px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px;
+    background: var(--red); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; border: 2px solid #fff; }
+  .bell-menu { position: absolute; right: 22px; top: 56px; width: min(390px, calc(100vw - 32px)); max-height: 70vh; overflow: auto;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); z-index: 30; }
+  .bell-menu h3 { margin: 0; padding: 12px 14px; font-size: 13px; border-bottom: 1px solid var(--line); }
+  main { padding: 22px 22px 48px; max-width: 1500px; margin: 0 auto; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 16px 18px; box-shadow: var(--shadow-sm);
+    position: relative; overflow: hidden; }
+  .kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--brand); }
+  .kpi:nth-child(2)::before { background: var(--mint); } .kpi:nth-child(3)::before { background: var(--amber); }
+  .kpi:nth-child(4)::before { background: var(--cta); } .kpi:nth-child(5)::before { background: var(--pink); }
+  .kpi b { display: block; font-size: 30px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .kpi span { font-size: 12.5px; color: var(--muted); }
+  .kpi.alert::before { background: var(--red); } .kpi.alert b { color: var(--red); }
+  .grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(350px, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 1050px) { .grid { grid-template-columns: 1fr; } }
+  h2 { font-size: 16px; color: var(--ink); margin: 0 0 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  h2 .n { color: var(--brand-ink); background: var(--brand-bg); border-radius: 999px; padding: 0 9px; font-size: 12px; }
+  section + section { margin-top: 22px; }
+
+  .cams { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .cam { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
+  .cam .view { position: relative; aspect-ratio: 16/9; background: #0f1424; }
+  .cam img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cam .nosig { position: absolute; inset: 0; display: grid; place-items: center; color: #aab3c9; font-weight: 700; letter-spacing: .1em; background: #0f1424; }
+  .cam .meta { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; gap: 8px; font-size: 13px; font-weight: 600; }
+  .badge { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; letter-spacing: .02em; white-space: nowrap; }
+  .s-OK, .s-LOGGED { background: var(--green-bg); color: var(--green-ink); }
+  .s-HIGH, .s-CONFIRMED, .s-BLOCKED, .s-OFFLINE { background: var(--red-bg); color: var(--red-ink); }
+  .s-MEDIUM, .s-PENDING, .s-FROZEN, .s-NOSIGNAL { background: var(--amber-bg); color: var(--amber-ink); }
+  .s-REVIEWING { background: var(--blue-bg); color: var(--blue-ink); }
+  .s-DISMISSED, .s-LEARNING, .s-STARTING { background: #eef1f6; color: var(--muted); }
+
+  .list { display: grid; gap: 10px; }
+  .item { display: grid; grid-template-columns: 100px 1fr; gap: 12px; padding: 9px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; text-align: left; width: 100%; box-shadow: var(--shadow-sm);
+    transition: transform .12s, box-shadow .12s; }
+  .item:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(20, 26, 46, .08); border-color: var(--line-2); }
+  .item.HIGH { border-left: 4px solid var(--red); } .item.MEDIUM { border-left: 4px solid var(--amber); }
+  .item img { width: 100px; aspect-ratio: 16/10; object-fit: cover; border-radius: 9px; background: #0f1424; display: block; }
+  .item .t { display: flex; gap: 6px; align-items: center; font-weight: 700; flex-wrap: wrap; }
+  .item .s { font-size: 12.5px; color: var(--muted); margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .item .w { font-size: 11.5px; color: var(--faint); margin-top: 3px; }
+  .empty { color: var(--faint); padding: 20px; text-align: center; border: 1.5px dashed var(--line-2); border-radius: var(--radius); font-size: 13px; background: rgba(255,255,255,.6); }
+
+  /* ---------- case modal ---------- */
+  .scrim { position: fixed; inset: 0; z-index: 40; background: rgba(20, 26, 46, .45); backdrop-filter: blur(3px); display: grid; place-items: center; padding: 18px; }
+  .modal { width: min(1060px, 100%); max-height: calc(100vh - 36px); overflow: auto; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); }
+  .modal-head { display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); z-index: 1; }
+  .modal-head h3 { margin: 0; font-size: 17px; font-weight: 800; }
+  .modal-body { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(310px, 1fr); gap: 20px; padding: 20px; }
+  @media (max-width: 860px) { .modal-body { grid-template-columns: 1fr; } }
+  .media { background: #0f1424; border-radius: 14px; overflow: hidden; }
+  .media video, .media img { width: 100%; display: block; aspect-ratio: 16/9; object-fit: contain; background: #0f1424; }
+  .facts { font-size: 13px; color: var(--muted); margin-top: 12px; display: grid; gap: 3px; }
+  .summary { background: linear-gradient(135deg, var(--brand-bg), var(--cta-bg)); border: 1px solid #dcd9ff; border-radius: 14px; padding: 14px 16px; }
+  .summary .who { font-size: 11.5px; font-weight: 700; color: var(--brand-ink); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
+  .evidence { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .evidence span { font-size: 12px; background: #fff; border: 1px solid #dcd9ff; border-radius: 999px; padding: 2px 10px; color: var(--brand-ink); }
+  .trace { margin: 14px 0 0; padding: 0; list-style: none; border-left: 2px solid var(--line); }
+  .trace li { position: relative; padding: 0 0 12px 16px; font-size: 13px; }
+  .trace li::before { content: ""; position: absolute; left: -7px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--line-2); border: 2px solid #fff; }
+  .trace li.cv::before { background: var(--green); } .trace li.ctx::before { background: var(--blue); }
+  .trace li.guard::before { background: var(--amber); } .trace li.final::before { background: var(--brand); }
+  .trace b { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: var(--text); }
+  .trace .out { color: var(--muted); font-size: 12.5px; }
+  .decide { margin-top: 18px; display: grid; gap: 10px; }
+  .decide .row { display: flex; gap: 10px; }
+  .decide .row .btn { flex: 1; padding: 12px; }
+  .kbd { font-size: 11.5px; color: var(--faint); }
+  .closex { margin-left: auto; border: 0; background: var(--panel-2); border-radius: 10px; font-size: 20px; color: var(--muted); line-height: 1; padding: 6px 10px; }
+  .closex:hover { color: var(--text); }
+  .handled { padding: 11px 13px; border-radius: 12px; background: var(--panel-2); border: 1px solid var(--line); font-size: 13px; }
+
+  /* ---------- resident ---------- */
+  .home { display: grid; grid-template-columns: minmax(280px, 390px) 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .home { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px; box-shadow: var(--shadow-sm); }
+  .card.hero { background: radial-gradient(300px 200px at 100% 0%, rgba(255, 111, 145, .45), transparent 70%), linear-gradient(140deg, var(--brand) 0%, #3b2aa8 100%); color: #fff; border: 0; border-radius: 26px; }
+  .card.hero .muted { color: rgba(255, 255, 255, .8); }
+  .house-no { font-size: 38px; font-weight: 800; line-height: 1.1; letter-spacing: -.01em; }
+  .switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; padding: 14px;
+    border-radius: 14px; background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .25); }
+  .switch .muted { color: rgba(255, 255, 255, .85) !important; }
+  .hero label { color: rgba(255, 255, 255, .85); }
+  .hero select { border-color: rgba(255, 255, 255, .35); color: var(--text); background: #fff; }
+  .toggle { position: relative; width: 52px; height: 30px; border-radius: 15px; border: 0; background: rgba(255, 255, 255, .35); flex: none; }
+  .toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff;
+    transition: transform .15s; box-shadow: 0 2px 6px rgba(0, 0, 0, .2); }
+  .toggle[aria-checked="true"] { background: var(--mint); }
+  .toggle[aria-checked="true"]::after { transform: translateX(22px); }
+  .safety { margin-top: 14px; font-size: 12.5px; color: rgba(255, 255, 255, .85); }
+
+  /* ---------- toasts ---------- */
+  .toasts { position: fixed; right: 18px; bottom: 18px; z-index: 50; display: grid; gap: 10px; width: min(370px, calc(100vw - 36px)); }
+  .toast { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--amber); border-radius: 12px;
+    padding: 12px 14px; box-shadow: var(--shadow); cursor: pointer; animation: up .2s ease-out; }
+  .toast.HIGH { border-left-color: var(--red); } .toast.ok { border-left-color: var(--green); }
+  .toast b { display: block; } .toast span { font-size: 12.5px; color: var(--muted); }
+  @keyframes up { from { transform: translateY(10px); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .toast { animation: none; } .toggle::after, .item { transition: none; } }
 </style>
 </head>
 <body>
-<header>
-  <div class="brand"><b>SEN<span>TRA</span></b><small>Guard Console</small></div>
-  <div class="clock" id="clock"></div>
-  <div class="stats">
-    <div class="stat pending">Pending<b id="sPending">0</b></div>
-    <div class="stat">Confirmed<b id="sConfirmed">0</b></div>
-    <div class="stat">Dismissed<b id="sDismissed">0</b></div>
-    <div class="stat">False alarms<b id="sFalse">-</b></div>
-    <div class="stat">Avg response<b id="sResp">-</b></div>
-    <div class="stat">Away Mode<b id="sAway">-</b></div>
-    <button class="iconbtn" id="soundBtn" title="Beep on new alerts">Sound: off</button>
-  </div>
-</header>
 
-<main>
-  <div>
-    <h2>LIVE CAMERAS</h2>
-    <div class="cams" id="cams"><div class="empty">No cameras running yet. Start one with<br><code>python scripts/run_sentra.py --camera demo --config config/demo.yaml --realtime --loop</code></div></div>
-  </div>
-  <div>
-    <h2>SELECTED ALERT</h2>
-    <div id="detail"><div class="empty">No alerts yet. Alerts appear here with a 10-second clip.</div></div>
-    <h2>ALERT QUEUE</h2>
-    <div class="queue" id="queue"></div>
-  </div>
-</main>
+<!-- ================= public landing page ================= -->
+<div class="landing" id="landing" hidden>
+  <div class="wrap">
+    <nav class="nav" aria-label="Main">
+      <div class="logo"><i></i>SENTRA</div>
+      <div class="links"><a href="#how">How it works</a><a href="#features">Features</a><a href="#privacy">Privacy</a></div>
+      <div class="right">
+        <button class="pill ghost" data-auth="login">Sign in</button>
+        <button class="pill cta" data-auth="register">Get started</button>
+      </div>
+    </nav>
 
-<section class="history">
-  <h2>HANDLED ALERTS</h2>
-  <table><thead><tr><th>Time</th><th>Camera</th><th>Alert</th><th>Decision</th><th>Response</th><th>Note</th></tr></thead>
-    <tbody id="history"><tr><td colspan="6" style="color:var(--muted)">None yet</td></tr></tbody></table>
-</section>
+    <section class="hero-sec">
+      <div>
+        <span class="eyebrow"><i></i>AI security for residential townships</span>
+        <h1>Your CCTV, now a guard that <em>never gets tired.</em></h1>
+        <p class="lead">SENTRA watches existing cameras with OpenCV 5, double-checks every alert with an AI agent,
+          and only bothers a human when it matters. Residents hear about it once a guard confirms.</p>
+        <div class="ctas">
+          <button class="pill cta lg" data-auth="register">Create an account</button>
+          <button class="pill ghost lg" data-auth="login">I already have one</button>
+        </div>
+        <div class="trust"><small>Built with</small><div><span>OpenCV 5</span><span>Amazon Bedrock</span><span>Amazon EC2</span><span>Amazon S3</span></div></div>
+      </div>
+      <div class="art" aria-hidden="true">
+        <div class="shape"></div>
+        <div class="tri"></div>
+        <div class="screen">
+          <svg viewBox="0 0 440 280">
+            <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d1a4a"/><stop offset="1" stop-color="#2c2a5c"/></linearGradient></defs>
+            <rect width="440" height="280" fill="url(#sky)"/>
+            <rect x="0" y="196" width="440" height="84" fill="#25234f"/>
+            <path d="M40 196 V120 L110 76 L180 120 V196 Z" fill="#33306a"/><rect x="92" y="146" width="36" height="50" rx="3" fill="#423e86"/>
+            <rect x="72" y="126" width="18" height="16" rx="2" fill="#f7d58b" opacity=".75"/><rect x="132" y="126" width="18" height="16" rx="2" fill="#f7d58b" opacity=".75"/>
+            <g stroke="#5a56a8" stroke-width="3"><line x1="220" y1="150" x2="220" y2="200"/><line x1="236" y1="150" x2="236" y2="200"/><line x1="252" y1="150" x2="252" y2="200"/>
+              <line x1="268" y1="150" x2="268" y2="200"/><line x1="284" y1="150" x2="284" y2="200"/><line x1="300" y1="150" x2="300" y2="200"/><line x1="212" y1="156" x2="308" y2="156"/></g>
+            <polygon points="206,146 316,146 330,214 194,214" fill="#e11d48" fill-opacity=".18" stroke="#ff6f91" stroke-width="2" stroke-dasharray="6 4"/>
+            <rect x="200" y="134" width="64" height="14" rx="4" fill="#e11d48"/><text x="206" y="144" font-size="9" fill="#fff" font-family="DM Sans, sans-serif" font-weight="700">Gate No. 8</text>
+            <g><rect x="256" y="132" width="22" height="22" rx="4" fill="#8c86d6"/><rect x="256" y="132" width="11" height="11" fill="#a39ee3"/><rect x="267" y="143" width="11" height="11" fill="#a39ee3"/>
+              <rect x="252" y="155" width="30" height="40" rx="9" fill="#6f69c4"/><rect x="255" y="193" width="9" height="20" rx="4" fill="#6f69c4"/><rect x="270" y="193" width="9" height="20" rx="4" fill="#6f69c4"/></g>
+            <rect x="244" y="124" width="46" height="94" rx="4" fill="none" stroke="#3ddbb0" stroke-width="2.5"/>
+            <rect x="244" y="110" width="66" height="14" rx="4" fill="#3ddbb0"/><text x="249" y="120" font-size="9" fill="#0b2f26" font-family="DM Sans, sans-serif" font-weight="700">person #3  4s</text>
+            <rect x="0" y="0" width="440" height="24" fill="#120f2e" opacity=".85"/>
+            <circle cx="14" cy="12" r="4" fill="#ff6f91"/><text x="24" y="16" font-size="10" fill="#d9d5ff" font-family="DM Sans, sans-serif">CAM 01 · Main Gate · night IR</text>
+            <rect x="370" y="6" width="62" height="13" rx="6" fill="#3ddbb0"/><text x="380" y="16" font-size="9" fill="#0b2f26" font-family="DM Sans, sans-serif" font-weight="700">CAMERA OK</text>
+          </svg>
+        </div>
+        <div class="float chip1"><span class="dot" style="background:var(--pink-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="#ff6f91" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="9" r="4"/><path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5"/><path d="M4 4l16 16"/></svg></span>Face blurred before storage</div>
+        <div class="float alert">
+          <div class="t"><span class="badge s-HIGH">HIGH</span>Perimeter breach</div>
+          <p>Agent re-checked with OpenCV: person in 9 of 10 frames, moving toward the gate. Sent to the guard.</p>
+          <div class="b"><span style="background:var(--red);color:#fff">Approve alarm</span><span style="background:var(--panel-2);border:1px solid var(--line-2)">Dismiss</span></div>
+        </div>
+        <div class="float chip2"><span class="dot" style="background:var(--mint-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>Guard decided in 12 s</div>
+      </div>
+    </section>
+    <a class="down" href="#how" aria-label="Scroll to how it works"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></a>
 
-<footer>
-  <span>Shortcuts: <kbd>C</kbd> confirm, <kbd>D</kbd> dismiss, <kbd>&uarr;</kbd><kbd>&darr;</kbd> move in queue. No facial recognition. Only confirmed alerts reach residents.</span>
-  <button id="resetBtn">Clear demo data</button>
-</footer>
+    <section class="sec" id="how">
+      <div class="pinktri" aria-hidden="true"></div>
+      <div class="sec-title"><span class="kicker">How it works</span><h2>From camera to confirmed alert, with a human in charge</h2>
+        <p>Every alarm passes two checks before anyone's phone buzzes.</p></div>
+      <div class="steps">
+        <div class="step"><div class="ic" style="background:var(--cta-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="#0e8fa0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 11l5-3v8l-5-3"/></svg></div>
+          <div class="n">STEP 1</div><h3>Watch</h3><p>OpenCV 5 runs YOLOv8 on your existing cameras and tracks people and vehicles in your zones.</p></div>
+        <div class="step"><div class="ic" style="background:var(--brand-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="#6c4cf1" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/><path d="M11 8v6M8 11h6"/></svg></div>
+          <div class="n">STEP 2</div><h3>Re-check</h3><p>An AI agent on Amazon Bedrock re-examines the clip with OpenCV tools before deciding.</p></div>
+        <div class="step"><div class="ic" style="background:var(--pink-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="#ff4f7a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <div class="n">STEP 3</div><h3>Guard decides</h3><p>Real cases pop up for the guard with the clip and the agent's reasoning. One tap to approve.</p></div>
+        <div class="step"><div class="ic" style="background:var(--mint-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
+          <div class="n">STEP 4</div><h3>Resident alerted</h3><p>Only confirmed alerts reach the resident, with what happened and what to do next.</p></div>
+      </div>
+    </section>
+
+    <section class="sec" id="features">
+      <div class="sec-title"><span class="kicker">Features</span><h2>Fewer false alarms. More trust.</h2></div>
+      <div class="features">
+        <div class="feat f1"><div><h3>Agentic triage</h3><p>The agent calls OpenCV tools, looks again when the evidence is weak, and explains every decision step by step.</p>
+          <ul><li>Contrast boost for night video</li><li>Optical-flow motion check</li><li>Full decision trace</li></ul></div>
+          <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="#6c4cf1" stroke-width="2" stroke-linecap="round"><rect x="5" y="7" width="14" height="11" rx="3"/><path d="M12 3v4M9 12h.01M15 12h.01M9 15h6"/></svg></div></div>
+        <div class="feat f2" id="privacy"><div><h3>Privacy by design</h3><p>No facial recognition, ever. Faces and heads are blurred before any frame is saved, and only numbers go to the cloud.</p>
+          <ul><li>OpenCV YuNet face blur</li><li>Clips only for allowed users</li><li>No images sent to the AI model</li></ul></div>
+          <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div></div>
+        <div class="feat f3"><div><h3>Away Mode</h3><p>Going on holiday? Switch on Away Mode and any person at your house becomes a high-priority case.</p>
+          <ul><li>One switch in the app</li><li>Choose 1 day to 1 week</li></ul></div>
+          <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="#ff4f7a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6 8 6v9H4z"/><path d="M10 20v-5h4v5"/></svg></div></div>
+        <div class="feat f4"><div><h3>Camera health</h3><p>Know when a camera is covered, frozen or offline, before it matters.</p>
+          <ul><li>Blocked lens detection</li><li>Frozen picture and offline alerts</li></ul></div>
+          <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="#0e8fa0" stroke-width="2" stroke-linecap="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg></div></div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="numbers">
+        <div><b>0</b><span>faces recognised or stored</span></div>
+        <div><b>100%</b><span>of alarms approved by a human</span></div>
+        <div><b>3 s</b><span>OpenCV re-check before any alert</span></div>
+      </div>
+      <div class="cta-band">
+        <div><h2>See SENTRA on your own cameras</h2><p>Create a resident or guard account and watch a case arrive live.</p></div>
+        <button class="pill cta lg" data-auth="register">Get started</button>
+      </div>
+    </section>
+    <footer class="site"><span>SENTRA by Team Codex, Universiti Teknologi PETRONAS · OpenCV AI Competition 2026</span><span>Student prototype. No facial recognition.</span></footer>
+  </div>
+</div>
+
+<!-- ================= sign in / register (modal) ================= -->
+<div class="auth" id="auth" hidden>
+  <div class="auth-card" role="dialog" aria-modal="true" aria-label="Sign in or create an account">
+    <button class="closex" id="auth-close" aria-label="Close">&times;</button>
+    <div class="logo"><i></i>SENTRA</div>
+    <p class="tagline">AI security triage for residential townships</p>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tab-login" aria-selected="true">Sign in</button>
+      <button role="tab" id="tab-reg" aria-selected="false">Create account</button>
+    </div>
+    <form id="f-login">
+      <label for="l-user">Username</label><input type="text" id="l-user" autocomplete="username" required>
+      <label for="l-pw">Password</label><input type="password" id="l-pw" autocomplete="current-password" required>
+      <button class="btn primary block" type="submit">Sign in</button>
+    </form>
+    <form id="f-reg" hidden>
+      <label>I am a</label>
+      <div class="roles">
+        <label><input type="radio" name="role" value="resident" checked><span>Resident<small>Alerts for my house</small></span></label>
+        <label><input type="radio" name="role" value="guard"><span>Guard<small>Review and decide</small></span></label>
+      </div>
+      <label for="r-name">Full name</label><input type="text" id="r-name" autocomplete="name">
+      <label for="r-user">Username</label><input type="text" id="r-user" autocomplete="username" required>
+      <label for="r-pw">Password (8+ characters)</label><input type="password" id="r-pw" autocomplete="new-password" required>
+      <div id="r-house-wrap"><label for="r-house">House number</label><input type="text" id="r-house" placeholder="e.g. 12"></div>
+      <div id="r-code-wrap" hidden><label for="r-code">Guard invite code</label><input type="password" id="r-code"></div>
+      <button class="btn primary block" type="submit">Create account</button>
+    </form>
+    <div class="err" id="auth-err" role="alert"></div>
+    <p class="privacy-note">SENTRA never uses facial recognition. Faces are blurred before any video is stored.</p>
+  </div>
+</div>
+
+<!-- ================= app ================= -->
+<div id="app" hidden>
+  <header>
+    <div class="logo"><i></i>SENTRA</div>
+    <span class="chip" id="who"></span>
+    <span class="live" id="live"><i></i><span>Connecting</span></span>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="sound" title="Alert sound" aria-pressed="true">Sound on</button>
+    <button class="iconbtn" id="bell" aria-label="Notifications">&#128276;<span class="count" id="bell-n" hidden>0</span></button>
+    <button class="iconbtn" id="logout">Sign out</button>
+  </header>
+  <div class="bell-menu" id="bell-menu" hidden><h3>Notifications</h3><div id="bell-list" class="list" style="padding:10px"></div></div>
+
+  <!-- guard -->
+  <main id="guard" hidden>
+    <div class="kpis">
+      <div class="kpi alert"><b id="k-pending">0</b><span>Waiting for your decision</span></div>
+      <div class="kpi"><b id="k-logged">0</b><span>Filtered by the agent (no alert)</span></div>
+      <div class="kpi"><b id="k-far">-</b><span>False alarm rate (dismissed)</span></div>
+      <div class="kpi"><b id="k-resp">-</b><span>Average guard response</span></div>
+      <div class="kpi"><b id="k-away">0</b><span>Houses in Away Mode</span></div>
+    </div>
+    <div class="grid">
+      <div>
+        <section><h2>Cameras</h2><div class="cams" id="cams"></div></section>
+      </div>
+      <div>
+        <section><h2>Needs your decision <span class="n" id="n-pending">0</span></h2><div class="list" id="l-pending"></div></section>
+        <section><h2>Agent reviewing <span class="n" id="n-review">0</span></h2><div class="list" id="l-review"></div></section>
+        <section><h2>Filtered by the agent <span class="n" id="n-logged">0</span></h2><div class="list" id="l-logged"></div></section>
+        <section><h2>Recent decisions</h2><div class="list" id="l-done"></div></section>
+      </div>
+    </div>
+  </main>
+
+  <!-- resident -->
+  <main id="resident" hidden>
+    <div class="home">
+      <div class="card hero">
+        <div class="muted">Your house</div>
+        <div class="house-no" id="h-no">-</div>
+        <div class="switch">
+          <div><b>Away Mode</b><div class="muted" style="font-size:12.5px" id="away-txt">Any person at your house becomes a high-priority alert.</div></div>
+          <button class="toggle" id="away" role="switch" aria-checked="false" aria-label="Away Mode"></button>
+        </div>
+        <label for="away-days">Keep Away Mode on for</label>
+        <select id="away-days"><option value="0">Until I turn it off</option><option value="1">1 day</option><option value="3">3 days</option><option value="7">1 week</option></select>
+        <p class="safety">You only receive alerts a guard has checked and confirmed. In danger? Call the guardhouse or 999.</p>
+      </div>
+      <section><h2>Confirmed alerts <span class="n" id="n-res">0</span></h2><div class="list" id="l-res"></div></section>
+    </div>
+  </main>
+</div>
+
+<!-- case modal -->
+<div class="scrim" id="scrim" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-title">
+    <div class="modal-head">
+      <span class="badge" id="m-sev"></span><h3 id="m-title"></h3><span class="badge" id="m-status"></span>
+      <button class="closex" id="m-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <div class="media" id="m-media"></div>
+        <div class="facts" id="m-facts"></div>
+      </div>
+      <div>
+        <div class="summary"><div class="who" id="m-who">Agent summary</div><div id="m-summary"></div><div class="evidence" id="m-evidence"></div></div>
+        <div id="m-trace-wrap"><h2 style="margin-top:16px">How the agent decided</h2><ol class="trace" id="m-trace"></ol></div>
+        <div class="decide" id="m-decide">
+          <textarea id="m-note" rows="2" placeholder="Note (optional), e.g. resident's guest"></textarea>
+          <div class="row">
+            <button class="btn danger" id="m-confirm">Approve alarm</button>
+            <button class="btn" id="m-dismiss">Dismiss</button>
+          </div>
+          <div class="kbd">Keyboard: A approve, D dismiss, Esc close</div>
+        </div>
+        <div class="handled" id="m-handled" hidden></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
 
 <script>
 const $ = (id) => document.getElementById(id);
-let events = [], selectedId = null, seen = new Set(), sound = false, firstLoad = true, shownClip = null;
-const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const fmtTime = (ts) => new Date(ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+let me = null, events = new Map(), openId = null, unread = [], soundOn = true, es = null;
 
-setInterval(() => { $("clock").textContent = new Date().toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" }); }, 1000);
+async function api(path, opts = {}) {
+  const r = await fetch(path, { credentials: "same-origin", headers: { "Content-Type": "application/json" }, ...opts });
+  if (r.status === 401) { showAuth(); throw new Error("401"); }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || r.status);
+  return data;
+}
+const ago = (t) => { const s = Math.max(0, Date.now() / 1000 - t); return s < 60 ? `${s | 0}s ago` : s < 3600 ? `${(s / 60) | 0} min ago` : `${(s / 3600) | 0} h ago`; };
+const RULE = { PERIMETER_BREACH: "Perimeter breach", AWAY_BREACH: "Away Mode breach", LOITERING: "Loitering", VEHICLE_DWELL: "Vehicle dwell",
+  CAMERA_BLOCKED: "Camera blocked", CAMERA_FROZEN: "Camera frozen", CAMERA_OFFLINE: "Camera offline" };
+const STATUS = { REVIEWING: "Agent reviewing", PENDING: "Needs decision", LOGGED: "Logged by agent", CONFIRMED: "Confirmed", DISMISSED: "Dismissed" };
+const prio = (e) => e.agent_priority || e.severity;
 
-function beep() {
-  if (!sound) return;
+/* ---------------- auth ---------------- */
+function showAuth() { if (es) es.close(); $("app").hidden = true; $("landing").hidden = false; }
+function openAuth(reg) { $("auth").hidden = false; tab(reg); setTimeout(() => (reg ? $("r-name") : $("l-user")).focus(), 50); }
+function closeAuth() { $("auth").hidden = true; }
+document.querySelectorAll("[data-auth]").forEach((b) => b.onclick = () => openAuth(b.dataset.auth === "register"));
+$("auth-close").onclick = closeAuth;
+$("auth").onclick = (ev) => { if (ev.target === $("auth")) closeAuth(); };
+function tab(reg) {
+  $("tab-login").setAttribute("aria-selected", !reg); $("tab-reg").setAttribute("aria-selected", reg);
+  $("f-login").hidden = reg; $("f-reg").hidden = !reg; $("auth-err").textContent = "";
+}
+$("tab-login").onclick = () => tab(false); $("tab-reg").onclick = () => tab(true);
+document.querySelectorAll("input[name=role]").forEach((r) => r.onchange = () => {
+  const guard = document.querySelector("input[name=role]:checked").value === "guard";
+  $("r-house-wrap").hidden = guard; $("r-code-wrap").hidden = !guard;
+});
+$("f-login").onsubmit = async (ev) => {
+  ev.preventDefault();
+  try { await api("/api/login", { method: "POST", body: JSON.stringify({ username: $("l-user").value, password: $("l-pw").value }) }); start(); }
+  catch (e) { $("auth-err").textContent = e.message; }
+};
+$("f-reg").onsubmit = async (ev) => {
+  ev.preventDefault();
+  const role = document.querySelector("input[name=role]:checked").value;
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [0, 0.25].forEach((d) => { const o = ctx.createOscillator(), g = ctx.createGain();
-      o.frequency.value = 880; o.connect(g); g.connect(ctx.destination); g.gain.value = 0.15;
-      o.start(ctx.currentTime + d); o.stop(ctx.currentTime + d + 0.15); });
-  } catch (e) {}
-}
-$("soundBtn").onclick = () => { sound = !sound; $("soundBtn").textContent = "Sound: " + (sound ? "on" : "off"); if (sound) beep(); };
+    await api("/api/register", { method: "POST", body: JSON.stringify({ role, name: $("r-name").value, username: $("r-user").value,
+      password: $("r-pw").value, house: $("r-house").value, guard_code: $("r-code").value }) });
+    start();
+  } catch (e) { $("auth-err").textContent = e.message; }
+};
+$("logout").onclick = async () => { await api("/api/logout", { method: "POST" }).catch(() => {}); location.reload(); };
 
-async function api(path, opts) { const r = await fetch(path, opts); if (!r.ok) throw new Error(r.status); return r.json(); }
-
-// ---------------- cameras ----------------
-const camEls = {};
-async function loadCams() {
-  let cams = [];
-  try { cams = await api("/api/cameras"); } catch (e) { return; }
-  const box = $("cams");
-  if (!cams.length) return;
-  if (box.querySelector(".empty")) box.innerHTML = "";
-  for (const c of cams) {
-    let el = camEls[c.camera_id];
-    if (!el) {
-      el = document.createElement("div"); el.className = "cam";
-      el.innerHTML = `<div class="view"><img alt=""><div class="nosig" hidden>NO SIGNAL</div></div>
-        <div class="meta"><span class="name"></span><span class="badge"></span></div>`;
-      box.appendChild(el); camEls[c.camera_id] = el;
+/* ---------------- sound ---------------- */
+let actx = null;
+function beep(high) {
+  if (!soundOn) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const n = high ? 3 : 1;
+    for (let i = 0; i < n; i++) {
+      const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + i * 0.28;
+      o.frequency.value = high ? 880 : 660; o.type = "square"; g.gain.setValueAtTime(0.08, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 0.24);
     }
-    const status = c.stale ? "OFFLINE" : c.status;
-    el.querySelector(".name").textContent = c.name;
-    const b = el.querySelector(".badge"); b.textContent = "CAMERA " + status; b.className = "badge b-" + status.replace(" ", "");
-    el.querySelector(".nosig").hidden = !(c.stale || status === "NO SIGNAL" || status === "OFFLINE");
-    if (!c.stale && c.frame_url) {
-      const img = new Image();
-      img.onload = () => { el.querySelector("img").src = img.src; };
-      img.src = c.frame_url + "?t=" + Date.now();
-    }
+  } catch (e) { /* audio not available */ }
+}
+$("sound").onclick = () => { soundOn = !soundOn; $("sound").textContent = soundOn ? "Sound on" : "Sound off"; $("sound").setAttribute("aria-pressed", soundOn); };
+
+/* ---------------- start ---------------- */
+async function start() {
+  try { me = await api("/api/me"); } catch (e) { return; }
+  $("auth").hidden = true; $("landing").hidden = true; $("app").hidden = false; window.scrollTo(0, 0);
+  $("who").textContent = me.role === "guard" ? `Guard · ${me.name || me.username}` : `Resident · House ${me.house}`;
+  $("guard").hidden = me.role !== "guard"; $("resident").hidden = me.role !== "resident";
+  const list = await api("/api/events");
+  events = new Map(list.map((e) => [e.id, e]));
+  render();
+  connect();
+  if (me.role === "guard") { pollCams(); setInterval(pollCams, 1000); pollStats(); setInterval(pollStats, 3000); }
+  else renderAway();
+  setInterval(render, 15000);   // refresh "x min ago"
+}
+
+function connect() {
+  if (es) es.close();
+  es = new EventSource("/api/stream");
+  es.onopen = () => { $("live").classList.add("on"); $("live").lastElementChild.textContent = "Live"; };
+  es.onerror = () => { $("live").classList.remove("on"); $("live").lastElementChild.textContent = "Reconnecting"; };
+  es.addEventListener("update", (m) => {
+    const e = JSON.parse(m.data), old = events.get(e.id);
+    events.set(e.id, e);
+    const becamePending = e.status === "PENDING" && (!old || old.status !== "PENDING");
+    const becameConfirmed = e.status === "CONFIRMED" && (!old || old.status !== "CONFIRMED");
+    if (me.role === "guard" && becamePending) notify(e, true);
+    if (me.role === "resident" && becameConfirmed) notify(e, true);
+    if (me.role === "guard" && e.status === "LOGGED" && (!old || old.status !== "LOGGED")) toast(e, "Filtered by agent", true);
+    render();
+    if (openId === e.id) openCase(e.id, true);
+  });
+}
+
+function notify(e, popup) {
+  unread.unshift(e.id); unread = [...new Set(unread)].slice(0, 30);
+  renderBell(); beep(prio(e) === "HIGH"); toast(e);
+  if (popup && !openId) openCase(e.id);
+}
+
+/* ---------------- rendering ---------------- */
+function item(e) {
+  const p = prio(e);
+  return `<button class="item ${esc(p)}" data-id="${esc(e.id)}">
+    <img src="${esc(e.snapshot_url || "")}" alt="" loading="lazy">
+    <div><div class="t"><span class="badge s-${esc(p)}">${esc(p)}</span>${esc(RULE[e.rule] || e.title)}<span class="badge s-${esc(e.status)}">${esc(STATUS[e.status] || e.status)}</span></div>
+    <div class="s">${esc(e.agent_summary || e.message)}</div>
+    <div class="w">${esc(e.camera_name)} · ${ago(e.created)}</div></div></button>`;
+}
+function fill(id, list, empty) {
+  $(id).innerHTML = list.length ? list.map(item).join("") : `<div class="empty">${empty}</div>`;
+  $(id).querySelectorAll(".item").forEach((b) => b.onclick = () => openCase(b.dataset.id));
+}
+function render() {
+  const all = [...events.values()].sort((a, b) => b.created - a.created);
+  if (me.role === "guard") {
+    const pending = all.filter((e) => e.status === "PENDING").sort((a, b) => (prio(a) === "HIGH" ? -1 : 0) - (prio(b) === "HIGH" ? -1 : 0) || b.created - a.created);
+    const review = all.filter((e) => e.status === "REVIEWING");
+    const logged = all.filter((e) => e.status === "LOGGED").slice(0, 8);
+    const done = all.filter((e) => e.status === "CONFIRMED" || e.status === "DISMISSED").slice(0, 8);
+    fill("l-pending", pending, "Nothing needs a decision. The agent will pop up new cases here.");
+    fill("l-review", review, "No open cases.");
+    fill("l-logged", logged, "The agent has not filtered anything yet.");
+    fill("l-done", done, "No decisions yet.");
+    $("n-pending").textContent = pending.length; $("n-review").textContent = review.length; $("n-logged").textContent = all.filter((e) => e.status === "LOGGED").length;
+    document.title = pending.length ? `(${pending.length}) SENTRA` : "SENTRA";
+  } else {
+    fill("l-res", all, "No confirmed alerts for your house. You will get a pop-up if a guard confirms one.");
+    $("n-res").textContent = all.length;
   }
+  renderBell();
+}
+function renderBell() {
+  const n = unread.length;
+  $("bell-n").hidden = !n; $("bell-n").textContent = n;
+  const list = unread.map((id) => events.get(id)).filter(Boolean);
+  $("bell-list").innerHTML = list.length ? list.map(item).join("") : `<div class="empty">No new notifications.</div>`;
+  $("bell-list").querySelectorAll(".item").forEach((b) => b.onclick = () => { $("bell-menu").hidden = true; openCase(b.dataset.id); });
+}
+$("bell").onclick = () => { $("bell-menu").hidden = !$("bell-menu").hidden; };
+
+function toast(e, label, quiet) {
+  const t = document.createElement("div");
+  t.className = `toast ${quiet ? "ok" : prio(e)}`;
+  t.innerHTML = `<b>${esc(label || (me.role === "guard" ? "New case for review" : "Guard confirmed an alert"))}: ${esc(RULE[e.rule] || e.title)}</b><span>${esc(e.agent_summary || e.message)}</span>`;
+  t.onclick = () => { openCase(e.id); t.remove(); };
+  $("toasts").prepend(t);
+  setTimeout(() => t.remove(), quiet ? 5000 : 12000);
 }
 
-// ---------------- alerts ----------------
-function renderDetail() {
-  const e = events.find((x) => x.id === selectedId);
-  const box = $("detail");
-  if (!e) { box.innerHTML = `<div class="empty">No alerts yet. Alerts appear here with a 10-second clip.</div>`; shownClip = null; return; }
-  const media = e.clip_url
-    ? `<video src="${e.clip_url}" autoplay loop muted playsinline controls></video>`
-    : `<img src="${e.snapshot_url || ""}" alt="Alert snapshot"><div class="rec">Recording 10-second clip...</div>`;
-  const key = e.id + "|" + (e.clip_url || "") + "|" + e.status;
-  if (shownClip === key) return;                          // avoid restarting the video every poll
-  shownClip = key;
-  const decision = e.status === "PENDING"
-    ? `<input class="note" id="note" placeholder="Note for the record (optional), e.g. 'Patrol sent to No. 12'">
-       <div class="actions"><button class="confirm" onclick="decide('confirm')">Confirm intrusion</button>
-       <button class="dismiss" onclick="decide('dismiss')">Dismiss (false alarm)</button></div>`
-    : `<div class="handled"><span class="badge b-${e.status}">${e.status}</span> at ${esc(e.handled_at)}
-       ${e.response_seconds != null ? ` &middot; response ${e.response_seconds}s` : ""}
-       ${e.status === "CONFIRMED" ? (e.notified ? " &middot; resident notified on Telegram" : " &middot; no resident linked / Telegram not set up") : ""}
-       ${e.guard_note ? `<br>Note: ${esc(e.guard_note)}` : ""}</div>`;
-  box.innerHTML = `<div class="detail">${media}<div class="body">
-      <div class="title"><span class="badge b-${e.severity}">${e.severity}</span>${esc(e.title)}</div>
-      <div class="msg">${esc(e.message)}</div>
-      <div class="sub">${esc(e.camera_name)} &middot; ${fmtTime(e.created)}${e.track_id >= 0 ? ` &middot; ${esc(e.label)} #${e.track_id}` : ""}</div>
-      ${decision}</div></div>`;
-}
-
-function renderQueue() {
-  const pending = events.filter((e) => e.status === "PENDING");
-  $("queue").innerHTML = pending.length ? pending.map((e) => `
-    <button class="item ${e.id === selectedId ? "sel" : ""}" onclick="select('${e.id}')">
-      <img src="${e.snapshot_url || ""}" alt="">
-      <div><div class="t"><span class="badge b-${e.severity}">${e.severity}</span>${esc(e.title)}</div>
-      <div class="s">${esc(e.zone_name && e.zone_name !== "camera" ? e.zone_name : e.camera_name)} &middot; ${fmtTime(e.created)}</div></div>
-    </button>`).join("") : `<div class="empty">Queue clear</div>`;
-
-  const handled = events.filter((e) => e.status !== "PENDING");
-  $("history").innerHTML = handled.length ? handled.map((e) => `<tr style="cursor:pointer" onclick="select('${e.id}')">
-      <td>${fmtTime(e.created)}</td><td>${esc(e.camera_name)}</td><td>${esc(e.title)}: ${esc(e.message)}</td>
-      <td><span class="badge b-${e.status}">${e.status}</span></td>
-      <td>${e.response_seconds != null ? e.response_seconds + "s" : "-"}</td><td>${esc(e.guard_note)}</td></tr>`).join("")
-    : `<tr><td colspan="6" style="color:var(--muted)">None yet</td></tr>`;
-}
-
-async function loadEvents() {
-  try { events = await api("/api/events"); } catch (e) { return; }
-  let fresh = false;
-  for (const e of events) { if (!seen.has(e.id)) { seen.add(e.id); if (!firstLoad && e.status === "PENDING") fresh = true; } }
-  if (fresh) beep();
-  firstLoad = false;
-  const sel = events.find((e) => e.id === selectedId);
-  if (!sel || (sel.status !== "PENDING" && fresh)) {
-    const next = events.find((e) => e.status === "PENDING") || events[0];
-    selectedId = next ? next.id : null;
+/* ---------------- case modal ---------------- */
+function stepHTML(s) {
+  const o = s.output || {};
+  if (s.type === "tool_call") {
+    if (s.name === "request_human_approval" || s.name === "log_only")
+      return `<li class="final"><b>${esc(s.name)}</b> <span class="out">${esc(s.input?.priority || "")} ${esc(s.input?.summary || s.input?.reason || "")}</span></li>`;
+    const args = Object.entries(s.input || {}).map(([k, v]) => `${k}=${v}`).join(", ");
+    return `<li class="${s.name === "recheck_region" ? "cv" : "ctx"}"><b>${esc(s.name)}(${esc(args)})</b>`;
   }
-  renderQueue(); renderDetail();
-  const s = await api("/api/stats");
-  $("sPending").textContent = s.pending; $("sConfirmed").textContent = s.confirmed; $("sDismissed").textContent = s.dismissed;
-  $("sFalse").textContent = s.false_alarm_rate == null ? "-" : s.false_alarm_rate + "%";
-  $("sResp").textContent = s.avg_response_seconds == null ? "-" : s.avg_response_seconds + "s";
-  $("sAway").textContent = s.away_houses && s.away_houses.length ? s.away_houses.map((h) => "No. " + h).join(", ") : "none";
+  if (s.type === "tool_result") {
+    if (s.name === "request_human_approval" || s.name === "log_only")
+      return `<li class="guard"><b>rejected</b> <span class="out">${esc(o.error || "")}</span></li>`;
+    let txt = "";
+    if (s.name === "recheck_region") {
+      const ratio = o.person_ratio ?? o.object_ratio;
+      txt = `OpenCV 5: confirmed in ${o.frames_confirmed}/${o.frames_checked} frames (${Math.round((ratio || 0) * 100)}%), confidence ${o.mean_confidence}, ${o.motion_level}` +
+            `${o.moving_toward_zone ? ", moving toward zone" : ""}${o.low_light ? ", low light" : ""}${o.enhanced ? ", CLAHE enhanced" : ""}`;
+    } else if (s.name === "get_track_history") txt = `${o.seconds_in_zone}s in zone, tracked ${o.seconds_tracked_total}s, ${o.people_in_scene} people in scene`;
+    else if (s.name === "get_zone_context") txt = `${o.zone_type} zone${o.house ? " of house " + o.house : ""}, Away Mode ${o.away_mode_on ? "ON" : "off"}, past 24h: ${JSON.stringify(o.past_24h_alerts_here || {})}`;
+    else txt = JSON.stringify(o).slice(0, 160);
+    const open = s.source ? `<li class="cv"><b>${esc(s.name)}</b> <span class="faint">(local policy)</span>` : "";
+    return `${open}<div class="out">${esc(txt)}</div></li>`;
+  }
+  if (s.type === "guardrail") return `<li class="guard"><b>guardrail</b> <span class="out">${esc(s.rule)} (person in ${Math.round(s.person_ratio * 100)}% of frames)</span></li>`;
+  if (s.type === "decision") return `<li class="final"><b>${esc(s.action)}</b> <span class="out">${esc(s.priority || "")} by ${esc(s.decided_by)}</span></li>`;
+  return "";
 }
-
-function select(id) { selectedId = id; shownClip = null; renderQueue(); renderDetail(); }
-
+function openCase(id, refresh) {
+  const e = events.get(id); if (!e) return;
+  openId = id; unread = unread.filter((x) => x !== id); renderBell();
+  const p = prio(e);
+  $("m-sev").className = `badge s-${p}`; $("m-sev").textContent = p;
+  $("m-title").textContent = `${RULE[e.rule] || e.title} · ${e.zone_name || e.camera_name}`;
+  $("m-status").className = `badge s-${e.status}`; $("m-status").textContent = STATUS[e.status] || e.status;
+  if (!refresh || !$("m-media").dataset.clip || $("m-media").dataset.clip !== (e.clip_url || "")) {
+    $("m-media").dataset.clip = e.clip_url || "";
+    $("m-media").innerHTML = e.clip_url
+      ? `<video src="${esc(e.clip_url)}" controls autoplay muted loop playsinline poster="${esc(e.snapshot_url || "")}"></video>`
+      : `<img src="${esc(e.snapshot_url || "")}" alt="Alert snapshot (clip is still being saved)">`;
+  }
+  $("m-facts").innerHTML = `<div>${esc(e.camera_name)} · ${esc(e.wall_time)} · ${ago(e.created)}</div><div>${esc(e.message)}</div>` +
+    (me.role === "guard" && e.agent_model ? `<div class="faint">Decided by ${esc(e.agent_decided_by)} · ${esc(e.agent_model)} · ${esc(e.agent_ms)} ms</div>` : "");
+  const agentDone = !!e.agent_action;
+  $("m-who").textContent = me.role === "guard" ? (agentDone ? "Agent summary" : e.status === "REVIEWING" ? "Agent is reviewing" : "Alert") : "Confirmed by the guard";
+  $("m-summary").textContent = me.role === "guard" ? (e.agent_summary || e.message) :
+    `${e.message}. Stay inside and lock your doors. Call the guardhouse or 999 if you are in danger.`;
+  let evd = []; try { evd = (e.agent_steps || []).filter((s) => s.type === "tool_call" && s.name === "request_human_approval").flatMap((s) => s.input?.evidence || []); } catch (x) {}
+  $("m-evidence").innerHTML = evd.slice(0, 6).map((x) => `<span>${esc(x)}</span>`).join("");
+  $("m-trace-wrap").hidden = me.role !== "guard" || !(e.agent_steps || []).length;
+  $("m-trace").innerHTML = (e.agent_steps || []).map(stepHTML).join("");
+  const canDecide = me.role === "guard" && e.status === "PENDING";
+  $("m-decide").hidden = !canDecide;
+  const done = e.status === "CONFIRMED" || e.status === "DISMISSED";
+  $("m-handled").hidden = !(me.role === "guard" && (done || e.status === "LOGGED"));
+  $("m-handled").innerHTML = done ? `${esc(STATUS[e.status])} by ${esc(e.handled_by || "guard")} after ${esc(e.response_seconds)}s${e.guard_note ? " · " + esc(e.guard_note) : ""}`
+                                  : "The agent logged this without alerting anyone. Open the trace to see why.";
+  if (!refresh) { $("m-note").value = ""; }
+  $("scrim").hidden = false;
+}
+function closeCase() { openId = null; $("scrim").hidden = true; $("m-media").innerHTML = ""; $("m-media").dataset.clip = ""; }
 async function decide(kind) {
-  const e = events.find((x) => x.id === selectedId);
-  if (!e || e.status !== "PENDING") return;
-  const note = ($("note") || {}).value || "";
-  await api(`/api/events/${e.id}/${kind}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note }) });
-  const next = events.find((x) => x.status === "PENDING" && x.id !== e.id);
-  selectedId = next ? next.id : e.id; shownClip = null;
-  await loadEvents();
+  const id = openId; if (!id) return;
+  const e = await api(`/api/events/${id}/${kind}`, { method: "POST", body: JSON.stringify({ note: $("m-note").value }) });
+  events.set(e.id, e); render(); closeCase(); pollStats();
+  const next = [...events.values()].find((x) => x.status === "PENDING");
+  if (next) setTimeout(() => openCase(next.id), 300);
 }
-
+$("m-confirm").onclick = () => decide("confirm"); $("m-dismiss").onclick = () => decide("dismiss");
+$("m-close").onclick = closeCase;
+$("scrim").onclick = (ev) => { if (ev.target === $("scrim")) closeCase(); };
 document.addEventListener("keydown", (ev) => {
-  if (ev.target.tagName === "INPUT") return;
-  if (ev.key === "c" || ev.key === "C") decide("confirm");
-  if (ev.key === "d" || ev.key === "D") decide("dismiss");
-  if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
-    const p = events.filter((e) => e.status === "PENDING"); const i = p.findIndex((e) => e.id === selectedId);
-    const n = p[Math.max(0, Math.min(p.length - 1, i + (ev.key === "ArrowDown" ? 1 : -1)))];
-    if (n) { select(n.id); ev.preventDefault(); }
-  }
+  if (!$("auth").hidden && ev.key === "Escape") { closeAuth(); return; }
+  if ($("scrim").hidden || ev.target.tagName === "TEXTAREA") { if (ev.key === "Escape") closeCase(); return; }
+  if (ev.key === "Escape") closeCase();
+  if (!$("m-decide").hidden && (ev.key === "a" || ev.key === "A")) decide("confirm");
+  if (!$("m-decide").hidden && (ev.key === "d" || ev.key === "D")) decide("dismiss");
 });
 
-$("resetBtn").onclick = async () => {
-  if (!confirm("Clear all alerts and camera tiles? (demo data only)")) return;
-  await api("/api/reset", { method: "POST" }); events = []; seen.clear(); selectedId = null; shownClip = null;
-  Object.values(camEls).forEach((el) => el.remove()); for (const k in camEls) delete camEls[k];
-  loadEvents(); loadCams();
+/* ---------------- guard: cameras + stats ---------------- */
+async function pollCams() {
+  let cams = []; try { cams = await api("/api/cameras"); } catch (e) { return; }
+  const el = $("cams");
+  if (!cams.length) { el.innerHTML = `<div class="empty">No cameras running. Start one with scripts/run_sentra.py</div>`; return; }
+  cams.forEach((c) => {
+    let tile = el.querySelector(`[data-cam="${CSS.escape(c.camera_id)}"]`);
+    if (!tile) {
+      el.querySelector(".empty")?.remove();
+      tile = document.createElement("div"); tile.className = "cam"; tile.dataset.cam = c.camera_id;
+      tile.innerHTML = `<div class="view"><img alt=""><div class="nosig" hidden>NO SIGNAL</div></div><div class="meta"><span class="name"></span><span class="badge"></span></div>`;
+      el.appendChild(tile);
+    }
+    const st = c.stale ? "OFFLINE" : (c.status || "OK").replace(" ", "");
+    if (c.frame_url && !c.stale && tile.querySelector("img").getAttribute("src") !== c.frame_url) tile.querySelector("img").src = c.frame_url;
+    tile.querySelector(".nosig").hidden = !c.stale;
+    tile.querySelector(".name").textContent = c.name;
+    const b = tile.querySelector(".badge"); b.className = `badge s-${st}`; b.textContent = c.stale ? "OFFLINE" : c.status;
+  });
+}
+async function pollStats() {
+  let s; try { s = await api("/api/stats"); } catch (e) { return; }
+  $("k-pending").textContent = s.pending; $("k-logged").textContent = s.logged_by_agent;
+  $("k-far").textContent = s.false_alarm_rate == null ? "-" : `${s.false_alarm_rate}%`;
+  $("k-resp").textContent = s.avg_response_seconds == null ? "-" : `${s.avg_response_seconds}s`;
+  $("k-away").textContent = s.away_houses.length;
+}
+
+/* ---------------- resident: Away Mode ---------------- */
+function renderAway() {
+  $("h-no").textContent = `No. ${me.house}`;
+  $("away").setAttribute("aria-checked", !!me.away);
+  $("away-txt").textContent = me.away ? (me.away_until ? `On until ${me.away_until}. Any person at your house is a high-priority alert.` : "On. Any person at your house is a high-priority alert.")
+                                      : "Off. Turn on when nobody is home.";
+}
+$("away").onclick = async () => {
+  const on = $("away").getAttribute("aria-checked") !== "true";
+  const r = await api("/api/away", { method: "POST", body: JSON.stringify({ on, days: +$("away-days").value }) });
+  me.away = r.away; me.away_until = r.until; renderAway();
 };
 
-loadEvents(); loadCams();
-setInterval(loadEvents, 1000);
-setInterval(loadCams, 500);
+start();
 </script>
 </body>
 </html>

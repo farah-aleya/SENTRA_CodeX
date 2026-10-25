@@ -151,6 +151,7 @@ def main():
                     "people": sum(x.is_person for x in tracks),
                     "vehicles": sum(not x.is_person for x in tracks),
                     "away": bool(zone and zone.house and str(zone.house) in engine.away_houses),
+                    "live": live,
                 })
             clip_path = f"outputs/clips/{args.camera}_{eid}.mp4"
             clips.start(clip_path, on_done=lambda p, eid=eid: store.set_clip(store.connect(), eid, p))

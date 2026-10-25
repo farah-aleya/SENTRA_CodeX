@@ -239,13 +239,16 @@ class Tools:
                            ).fetchall()
         con.close()
         hour = datetime.now().hour
+        live = bool(self.case.scene.get("live"))
         return {
             "zone_name": z.label if z else self.case.event.get("zone_name"),
             "zone_type": z.type if z else None,
             "house": str(z.house) if z and z.house else None,
             "away_mode_on": bool(self.case.scene.get("away")),
-            "local_hour": hour,
-            "is_night": hour >= 19 or hour < 7,
+            "local_hour": hour if live else None,
+            "is_night": (hour >= 19 or hour < 7) if live else None,
+            "time_note": "live camera, clock time is real" if live else
+                         "recorded video: the clock time is unknown, use low_light from recheck_region instead",
             "past_24h_alerts_here": {r["status"]: r["n"] for r in rows},
         }
 
