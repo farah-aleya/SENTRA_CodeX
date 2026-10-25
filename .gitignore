@@ -12,3 +12,6 @@ dataset/
 config/secret.key
 datasets/
 eval/run_*.db
+# scratch output of scripts/eval_agent.py (named copies are committed)
+eval/agent_results.json
+eval/agent_cases.csv
