@@ -12,7 +12,7 @@ Team Codex, Universiti Teknologi PETRONAS · OpenCV AI Competition 2026, powered
 | | |
 |---|---|
 | Live web endpoint (AWS) | https://13-239-96-244.sslip.io |
-| Demo video (≤ 5 min) | _link added at submission_ |
+| Demo video (≤ 5 min) | https://youtu.be/8NQ5D92fWns |
 | Technical report | [docs/REPORT.md](docs/REPORT.md) |
 | Judge login | guard and resident accounts are listed in the private submission notes |
 
