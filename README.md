@@ -128,7 +128,7 @@ python scripts/eval_agent.py --modes rules local bedrock                      # 
 | Siti Zafirah Binti Zailan | Product, user experience, video |
 
 ## Licence and credits
-**SENTRA © 2026 Team Codex. All rights reserved.** Judges and organisers of the OpenCV AI Competition 2026 may view, run and evaluate the code. See [LICENSE](LICENSE).
+**SENTRA © 2026 Team Codex.** Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0), the same licence as the YOLOv8n weights it uses. See [LICENSE](LICENSE). You may use and change the code, but if you share it or run it as a web service, you must share your source code under AGPL-3.0 and keep this credit.
 
 SENTRA is built on the work of others:
 | Component | Credit | Licence |
